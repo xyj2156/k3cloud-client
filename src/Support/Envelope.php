@@ -7,13 +7,12 @@ namespace K3Cloud\Support;
 use K3Cloud\Exception\K3CloudException;
 
 /**
- * Builds the JSON body expected by every K/3 Cloud ".common.kdsvc" endpoint.
+ * 构造每个 K/3 Cloud ".common.kdsvc" 端点所期望的 JSON 请求体。
  *
- * The WebAPI uses a single positional envelope:
+ * WebAPI 使用单一的定位式信封：
  *   {"parameters": [ p0, p1, ... ]}
  *
- * Associative/array parameters are embedded as nested JSON objects (they are NOT
- * double-encoded to strings), which is what the K/3 Cloud server accepts.
+ * 关联数组/数组参数会作为嵌套 JSON 对象嵌入（不会被二次编码成字符串），这正是 K/3 Cloud 服务端接受的写法。
  */
 final class Envelope
 {

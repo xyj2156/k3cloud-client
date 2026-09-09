@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace K3Cloud\Http;
 
 /**
- * Raw HTTP response returned by a transport implementation.
+ * 由传输层实现返回的原始 HTTP 响应。
  */
 final class HttpResponse
 {
     /**
-     * @param array<string,list<string>> $headers Lower-cased header name -> list of values.
+     * @param array<string,list<string>> $headers 小写头名 -> 值列表。
      */
     public function __construct(
         public readonly int $status,

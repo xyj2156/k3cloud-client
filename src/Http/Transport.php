@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace K3Cloud\Http;
 
 /**
- * Performs a single HTTP request and returns the raw response.
+ * 执行单个 HTTP 请求并返回原始响应。
  *
- * Implementations must not throw for non-2xx statuses — surface them via
- * {@see HttpResponse::status()} so callers can decide. Only genuine transport
- * failures (DNS, TLS, timeout, cURL error) should raise a TransportException.
+ * 实现不得因非 2xx 状态而抛异常——请通过 {@see HttpResponse::status()} 暴露给调用方决定。
+ * 只有真正的传输失败（DNS、TLS、超时、cURL 错误）才应抛出 TransportException。
  */
 interface Transport
 {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace K3Cloud\Http;
 
 /**
- * An outgoing HTTP request, transport agnostic.
+ * 一个待发送的 HTTP 请求，与传输层无关。
  *
- * Headers are stored case-preserving but looked up case-insensitively.
+ * 头信息按原样大小写存储，但查找时大小写不敏感。
  */
 final class HttpRequest
 {

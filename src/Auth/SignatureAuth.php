@@ -11,16 +11,14 @@ use K3Cloud\Http\Transport;
 use K3Cloud\Support\Signer;
 
 /**
- * Third-party application signing.
+ * 第三方应用签名。
  *
- * Every request carries a fresh set of HMAC-signed headers; no server session or
- * cookie is used. Two independent signature families are attached:
+ * 每个请求都携带一组新计算的 HMAC 签名头；不使用服务端会话或 Cookie。附加两组相互独立的签名：
  *
- *  - X-Kd-*    : the K/3 Cloud "kd" signature over appId + app-data.
- *  - X-Api-*   : the API-gateway signature over method + path + timestamp + nonce.
+ *  - X-Kd-*    ：基于 appId + app-data 的 K/3 Cloud "kd" 签名。
+ *  - X-Api-*   ：基于 method + path + timestamp + nonce 的 API 网关签名。
  *
- * The timestamp and nonce are the same value (seconds since the epoch), and the
- * gateway secret is unmasked from the private half of the application id.
+ * 时间戳与 nonce 取同一值（自 epoch 起的秒数）；网关密钥由应用 ID 的私有段还原得到。
  */
 final class SignatureAuth implements AuthStrategy
 {
@@ -30,7 +28,7 @@ final class SignatureAuth implements AuthStrategy
 
     public function withDependencies(Config $config, Transport $transport): AuthStrategy
     {
-        // Stateless: signing is recomputed per request from the (new) config.
+        // 无状态：签名按请求由（新的）配置重新计算。
         return new self($config);
     }
 
@@ -39,7 +37,7 @@ final class SignatureAuth implements AuthStrategy
         $appId = (string) $this->config->appId;
         $appSecret = (string) $this->config->appSecret;
 
-        // Plain-text app data shared by the X-Kd signature and header.
+        // 明文 app data，X-Kd 签名与头共用。
         $appData = $this->buildAppData();
 
         [$clientId, $secretSegment] = explode('_', $appId, 2);
@@ -47,11 +45,11 @@ final class SignatureAuth implements AuthStrategy
         $encodedPath = $this->encodeRequestPath($request->url);
 
         $request = $request
-            // --- X-Kd family (private / kdsvc endpoint signing) ---
+            // --- X-Kd 组（私有云 / kdsvc 端点签名）---
             ->withHeader('X-Kd-Appkey', $appId)
             ->withHeader('X-Kd-Appdata', base64_encode($appData))
             ->withHeader('X-Kd-Signature', Signer::hmacSha256Base64($appId . $appData, $appSecret))
-            // --- X-Api family (public gateway signing) ---
+            // --- X-Api 组（公有云网关签名）---
             ->withHeader('X-Api-Auth-Version', '2.0')
             ->withHeader('X-Api-SignHeaders', 'X-Api-TimeStamp,X-Api-Nonce')
             ->withHeader('X-Api-ClientID', $clientId)
@@ -67,7 +65,7 @@ final class SignatureAuth implements AuthStrategy
 
     public function shouldRetry(HttpRequest $request, HttpResponse $response): bool
     {
-        return false; // stateless signing; nothing to refresh
+        return false; // 无状态签名；没有需要刷新的东西
     }
 
     private function buildAppData(): string
@@ -81,8 +79,8 @@ final class SignatureAuth implements AuthStrategy
     }
 
     /**
-     * String-to-sign for the gateway: METHOD \n encodedPath \n \n signHeaders... \n
-     * Query string is empty for kdsvc endpoints, hence the blank line.
+     * 网关待签名字符串：METHOD \n encodedPath \n \n signHeaders... \n
+     * kdsvc 端点的查询串为空，故中间有一行空行。
      */
     private function stringToSign(string $encodedPath, string $timestamp): string
     {
@@ -94,7 +92,7 @@ final class SignatureAuth implements AuthStrategy
     }
 
     /**
-     * Reduce an absolute URL to its percent-encoded path component (leading "/").
+     * 把绝对 URL 规约为其百分号编码后的路径部分（以 "/" 开头）。
      */
     private function encodeRequestPath(string $url): string
     {

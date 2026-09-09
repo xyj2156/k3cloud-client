@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace K3Cloud;
 
 /**
- * A single detail/entry row builder used inside {@see Entity::line()}.
+ * 在 {@see Entity::line()} 内使用的单行分录/明细行构造器。
  *
- * Same field API as the parent entity (set / ref / custom / package) so 二开
- * fields work on lines too, but it only produces a flat row array — it does not
- * talk to the server. All mutators are `: static` so the concrete subclass type
- * survives a fluent chain.
+ * 与父实体相同的字段 API（set / ref / custom / package），使二开字段在行上也能用；
+ * 但它只产出一个扁平的行数组——不与服务器通信。所有 mutator 都是 `: static`，
+ * 使具体子类类型贯穿链式调用。
  */
 class Line
 {
@@ -23,7 +22,7 @@ class Line
     }
 
     /**
-     * Set a scalar field on the row.
+     * 在行上设置一个标量字段。
      */
     public function set(string $key, mixed $value): static
     {
@@ -33,7 +32,7 @@ class Line
     }
 
     /**
-     * Set a base-data reference field: {"FNumber": $number} by default.
+     * 设置一个基础资料引用字段：默认 {"FNumber": $number}。
      */
     public function ref(string $key, string $number, string $refKey = 'FNumber'): static
     {
@@ -43,8 +42,8 @@ class Line
     }
 
     /**
-     * Attach a custom / 二开 field. Identical to set(), separated for intent and
-     * forward-compatibility (this is the schema-free escape hatch on a row).
+     * 附加一个自定义 / 二开字段。与 set() 完全相同，仅为语义与向后兼容而分开
+     * （这是行上的 schema-free 逃生口）。
      */
     public function custom(string $key, mixed $value): static
     {
@@ -52,7 +51,7 @@ class Line
     }
 
     /**
-     * Recursively merge a structure into this row (list values replace).
+     * 把一个结构递归合并进本行（列表值整体替换）。
      *
      * @param array<string,mixed> $structure
      */
@@ -70,7 +69,7 @@ class Line
     }
 
     /**
-     * Assoc arrays deep-merged; list/entry arrays replaced; scalars overwritten.
+     * 关联数组深合并；列表/分录数组整体替换；标量覆盖。
      *
      * @param array<string,mixed> $base
      * @param array<string,mixed> $over

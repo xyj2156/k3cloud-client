@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace K3Cloud\Support;
 
 /**
- * Minimal, case-insensitive cookie store used to persist the K/3 Cloud
- * session id between the login request and subsequent API calls.
+ * 极简、大小写不敏感的 Cookie 存储，用于在登录请求与后续 API 调用之间保留 K/3 Cloud 会话 id。
  */
 final class CookieJar
 {
-    /** @var array<string,string> name => value (names stored lower-cased) */
+    /** @var array<string,string> 名称 => 值（名称以小写存储） */
     private array $cookies = [];
 
     public function storeFromSetCookie(string $setCookieHeader): void
     {
-        // A single Set-Cookie value: "name=value; Path=/; HttpOnly".
+        // 单个 Set-Cookie 值形如："name=value; Path=/; HttpOnly"。
         $pair = trim(explode(';', $setCookieHeader, 2)[0]);
         if ($pair === '' || !str_contains($pair, '=')) {
             return;

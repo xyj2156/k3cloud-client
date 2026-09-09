@@ -10,30 +10,26 @@ use K3Cloud\Http\HttpResponse;
 use K3Cloud\Http\Transport;
 
 /**
- * Adds the authentication material (headers and/or cookies) a request needs and
- * reacts to responses that indicate the credentials/session must be refreshed.
+ * 为请求附加所需的鉴权材料（头和/或 Cookie），并对"需要刷新凭据/会话"的响应作出反应。
  */
 interface AuthStrategy
 {
     /**
-     * Return a strategy re-based onto a new Config and Transport, carrying over
-     * any reusable session state when the credential identity is unchanged.
+     * 返回一个重新绑定到新 Config 与 Transport 的策略：当凭据身份未变时，沿用可复用的会话状态。
      *
-     * Used when a client fluent option (TLS / timeouts) rebuilds the transport:
-     * a stateless strategy just rebuilds; a session strategy keeps its live
-     * session so a mid-stream reconfigure does not force a re-login.
+     * 用于客户端链式选项（TLS / 超时）重建传输层时：无状态策略直接重建；会话策略保留其活动
+     * 会话，使中途重配置不会触发重新登录。
      */
     public function withDependencies(Config $config, Transport $transport): self;
 
     /**
-     * Return a copy of $request decorated with auth headers / cookies.
-     * Implementations may lazily perform a login round-trip here.
+     * 返回附加了鉴权头 / Cookie 的 $request 副本。
+     * 实现可在此惰性发起一次登录往返。
      */
     public function decorate(HttpRequest $request): HttpRequest;
 
     /**
-     * True when a previous response indicates the session is no longer valid
-     * and a single transparent retry after re-authentication is worthwhile.
+     * 当上一个响应表明会话已失效、且值得在重新鉴权后做一次透明重试时返回 true。
      */
     public function shouldRetry(HttpRequest $request, HttpResponse $response): bool;
 }

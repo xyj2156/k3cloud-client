@@ -13,19 +13,15 @@ use K3Cloud\Support\CookieJar;
 use K3Cloud\Support\Envelope;
 
 /**
- * Classic username / password authentication.
+ * 经典用户名 / 密码鉴权。
  *
- * Performs a one-time login against the public
- * "AuthService.ValidateUser" endpoint, captures the resulting "kdsessionid"
- * (and any accompanying) cookies, and replays them on every subsequent request.
- * Login is lazy: it happens on the first decorated request and is transparent to
- * callers. When a response indicates the session expired, the state is dropped so
- * the retry re-authenticates.
+ * 针对公开的 "AuthService.ValidateUser" 端点做一次登录，捕获其返回的 "kdsessionid"
+ * （及随附）Cookie，并在其后每个请求上重放。登录是惰性的：发生在第一个被装饰的请求上，
+ * 对调用方透明。当某响应表明会话已过期时，丢弃该状态，使重试会重新鉴权。
  *
- * NOTE on the login payload: parameter order follows the widely used
- * [acctId, userName, password, lcid] convention. A few server builds expect a
- * different argument list; if yours rejects the login, override
- * {@see self::loginParameters()} (subclass) — no other code needs to change.
+ * 关于登录载荷：参数顺序遵循常用的 [acctId, userName, password, lcid]。少数服务端版本
+ * 期望不同的参数列表；若你的服务端拒绝登录，请覆盖 {@see self::loginParameters()}（子类）
+ * ——其余代码无需改动。
  */
 class SessionAuth implements AuthStrategy
 {
@@ -36,9 +32,8 @@ class SessionAuth implements AuthStrategy
     private bool $loggedIn = false;
 
     /**
-     * Hash of the credential-bearing config the current session was established
-     * for, so a rebase can tell "reconfigure" (keep session) from "different
-     * login" (drop session). Null until/unless logged in.
+     * 当前会话所依据的"含凭据配置"的哈希，使重绑定能区分"重配置"（保留会话）与
+     * "换登录"（丢弃会话）。未登录时为 null。
      */
     private ?string $establishedFor = null;
 
@@ -53,8 +48,7 @@ class SessionAuth implements AuthStrategy
     {
         $next = new static($config, $transport);
 
-        // Preserve the live session only when the identity that produced it is
-        // unchanged; otherwise the next request must authenticate afresh.
+        // 仅当产生该会话的身份未变时才保留它；否则下一个请求必须重新鉴权。
         if ($this->loggedIn && $this->establishedFor === self::identityKey($config)) {
             $next->loggedIn = true;
             $next->establishedFor = $this->establishedFor;
@@ -89,13 +83,11 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * Decide whether a response means "the session is gone" and therefore a
-     * single re-login + replay is worthwhile.
+     * 判断某响应是否意味着"会话已丢失"，从而值得做一次"重登录 + 重放"。
      *
-     * We match on the extracted error *message text* rather than the whole body
-     * (a successful response may legitimately contain these words inside user
-     * data). A session-lost save, for example, comes back as HTTP 200 with
-     * IsSuccess=false and Errors[].Message = "会话信息已丢失，请重新登录".
+     * 我们匹配抽取出的错误*消息文本*，而非整个响应体（一个成功响应可能在用户数据里合法地
+     * 包含这些词）。例如会话丢失的 Save 会返回 HTTP 200 + IsSuccess=false，且
+     * Errors[].Message = "会话信息已丢失，请重新登录"。
      */
     private function sessionExpired(HttpResponse $response): bool
     {
@@ -115,15 +107,15 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * Collect human-readable error text from a K/3 Cloud response body.
+     * 从 K/3 Cloud 响应体中收集人类可读的错误文本。
      *
-     * @return list<string> empty for a well-formed successful JSON body
+     * @return list<string> 对格式良好的成功 JSON 响应返回空数组
      */
     private static function errorMessages(string $body): array
     {
         $json = json_decode($body, true);
 
-        // Non-JSON (e.g. a plain-text gateway error): fall back to the raw body.
+        // 非 JSON（如纯文本网关错误）：回退到原始响应体。
         if (!is_array($json)) {
             return [$body];
         }
@@ -144,7 +136,7 @@ class SessionAuth implements AuthStrategy
             }
         }
 
-        // Some builds return the error as a bare string in Result, or at top level.
+        // 有些版本把错误以纯字符串放在 Result，或放在顶层。
         foreach (['Message', 'description', 'Result'] as $key) {
             if (is_string($json[$key] ?? null)) {
                 $messages[] = $json[$key];
@@ -155,7 +147,7 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * Force the next request to log in again (e.g. after switching org).
+     * 强制下一个请求重新登录（例如切换组织之后）。
      */
     public function invalidate(): void
     {
@@ -193,7 +185,7 @@ class SessionAuth implements AuthStrategy
             ));
         }
 
-        // LoginResultType === 1 means success on K/3 Cloud.
+        // LoginResultType === 1 在 K/3 Cloud 表示登录成功。
         $resultType = $payload['LoginResultType'] ?? null;
         if ($resultType !== null && (int) $resultType !== 1) {
             throw new AuthException(
@@ -218,9 +210,8 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * Fingerprint of the credential-bearing config fields that a session belongs
-     * to. TLS/timeout changes are intentionally excluded (they don't affect who
-     * is logged in); identity changes are not.
+     * 会话所归属的"含凭据配置字段"的指纹。TLS/超时变化被有意排除（不影响"是谁登录"）；
+     * 身份变化则不排除。
      */
     private static function identityKey(Config $c): string
     {
@@ -241,10 +232,8 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * PCRE patterns (UTF-8) matched against the extracted error message text to
-     * detect a lost/expired session. Covers the phrasings K/3 Cloud actually
-     * returns, e.g. "会话信息已丢失，请重新登录". Intentionally message-scoped so
-     * ordinary data never trips it.
+     * 与抽取出的错误消息文本匹配的 PCRE（UTF-8）模式，用于判定会话丢失/过期。覆盖 K/3 Cloud
+     * 实际返回的措辞，如"会话信息已丢失，请重新登录"。有意限定在消息范围内，普通数据不会误触发。
      */
     private const EXPIRY_MESSAGE_PATTERNS = [
         '/会话信息已丢失/u',

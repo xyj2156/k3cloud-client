@@ -7,15 +7,15 @@ namespace K3Cloud;
 use K3Cloud\Exception\ApiException;
 
 /**
- * A decoded, convenient view over a K/3 Cloud WebAPI response.
+ * 对 K/3 Cloud WebAPI 响应做解码、便于使用的视图。
  *
- * The server returns several shapes depending on the operation:
- *  - Write/operate calls: {"Result": {"ResponseStatus": {"IsSuccess": bool, ...},
+ * 服务端会因操作不同而返回多种形态：
+ *  - 写/操作类：{"Result": {"ResponseStatus": {"IsSuccess": bool, ...},
  *    "Id": .., "Number": "..", "Message": ..}}
- *  - Bill queries: a JSON array of rows (list of lists).
- *  - Plain data: a JSON array/object.
+ *  - 单据查询：行的 JSON 数组（列表的列表）。
+ *  - 普通数据：JSON 数组/对象。
  *
- * Result exposes the common parts without forcing callers to hand-dig the tree.
+ * Result 提炼出公共部分，免去调用方手工翻找嵌套结构。
  */
 final class Result
 {
@@ -33,13 +33,13 @@ final class Result
         $this->payload = $payload;
     }
 
-    /** The decoded body (array / scalar) or null when not JSON. */
+    /** 解码后的响应体（数组 / 标量）；非 JSON 时为 null。 */
     public function payload(): mixed
     {
         return $this->payload;
     }
 
-    /** Alias for the decoded body. */
+    /** payload() 的别名。 */
     public function array(): mixed
     {
         return $this->payload;
@@ -55,14 +55,14 @@ final class Result
         return $this->status;
     }
 
-    /** True for list-shaped responses (bill queries). */
+    /** 列表形态响应（单据查询）时为 true。 */
     public function isList(): bool
     {
         return is_array($this->payload) && array_is_list($this->payload);
     }
 
     /**
-     * Rows for a query response, or [] for anything else.
+     * 查询响应的行；其它情况返回 []。
      *
      * @return list<mixed>
      */
@@ -88,14 +88,14 @@ final class Result
     }
 
     /**
-     * Business success: ResponseStatus.IsSuccess when present; otherwise true if
-     * the HTTP call itself succeeded and no error envelope was returned.
+     * 业务是否成功：存在 ResponseStatus.IsSuccess 时以其为准；否则若 HTTP 调用本身成功
+     * 且未返回错误信封则为 true。
      */
     public function isSuccess(): bool
     {
         $status = $this->responseStatus();
         if ($status !== null) {
-            // IsSuccess may arrive as bool or 0/1.
+            // IsSuccess 可能是布尔，也可能是 0/1。
             return (bool) ($status['IsSuccess'] ?? false);
         }
 
@@ -107,7 +107,7 @@ final class Result
     }
 
     /**
-     * Best-effort single error message, or null when successful.
+     * 尽力提取的单条错误信息；成功时为 null。
      */
     public function errorMessage(): ?string
     {
@@ -139,7 +139,7 @@ final class Result
     }
 
     /**
-     * New record internal id (Save/Draft), when present.
+     * 新记录内码（Save/Draft），若存在。
      */
     public function id(): int|string|null
     {
@@ -152,7 +152,7 @@ final class Result
     }
 
     /**
-     * New record number (Save/Draft), when present.
+     * 新记录编码（Save/Draft），若存在。
      */
     public function number(): ?string
     {
@@ -165,7 +165,7 @@ final class Result
     }
 
     /**
-     * Throw an {@see ApiException} unless the operation reported success.
+     * 若操作未报告成功，则抛出 {@see ApiException}。
      */
     public function throwIfError(): self
     {

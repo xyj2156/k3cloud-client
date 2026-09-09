@@ -7,11 +7,10 @@ namespace K3Cloud\Http;
 use K3Cloud\Exception\TransportException;
 
 /**
- * cURL-backed transport.
+ * 基于 cURL 的传输实现。
  *
- * Response headers are captured through a header callback rather than by
- * slicing the body off a single buffer, so chunked responses and empty bodies
- * are parsed correctly regardless of Content-Length.
+ * 响应头通过 header 回调捕获，而不是从单一缓冲区里切出 body，因此分块响应与空 body 都能被正确解析，
+ * 不受 Content-Length 影响。
  */
 final class CurlTransport implements Transport
 {
@@ -77,8 +76,7 @@ final class CurlTransport implements Transport
         if ($result === false) {
             $message = curl_error($handle);
             $errno = curl_errno($handle);
-            // No curl_close(): it has been a no-op since PHP 8.0 and is
-            // deprecated in 8.5; the handle is released on GC.
+            // 不调用 curl_close()：自 PHP 8.0 起它就是空操作、8.5 起被废弃；句柄由 GC 释放。
             throw new TransportException(sprintf('HTTP request failed (%s): %s', $errno, $message), $errno);
         }
 
@@ -98,7 +96,7 @@ final class CurlTransport implements Transport
         foreach ($lines as $line) {
             $line = rtrim($line, "\r\n");
             if ($line === '' || !str_contains($line, ':')) {
-                continue; // status line / folded headers are ignored
+                continue; // 忽略状态行 / 折叠头
             }
             [$name, $value] = explode(':', $line, 2);
             $name = strtolower(trim($name));

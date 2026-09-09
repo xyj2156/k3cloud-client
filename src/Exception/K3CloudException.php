@@ -7,9 +7,9 @@ namespace K3Cloud\Exception;
 use Throwable;
 
 /**
- * Root of every exception thrown by this library.
+ * 本库所有异常的基类。
  *
- * Catch this to handle any failure the client can produce.
+ * 捕获它即可处理客户端可能产生的任何失败。
  */
 class K3CloudException extends \RuntimeException
 {

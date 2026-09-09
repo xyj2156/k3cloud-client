@@ -14,11 +14,10 @@ use K3Cloud\Http\Transport;
 use K3Cloud\Support\Envelope;
 
 /**
- * High-level client for the K/3 Cloud WebAPI.
+ * K/3 Cloud WebAPI 的高层客户端。
  *
- * Create it with one of the named constructors and call an operation; auth and
- * (for password mode) login are handled for you. Both modes share the same
- * fluent options (->insecure(), ->withTimeouts(), ->secure()):
+ * 用任一具名构造器创建后即可调用操作；鉴权与（密码模式下的）登录都自动完成。两种模式共用
+ * 同一套链式选项（->insecure()、->withTimeouts()、->secure()）：
  *
  *   $api = K3CloudClient::appSignature($url, $acctId, $user, $appId, $appSecret);
  *   $api = K3CloudClient::password($url, $acctId, $user, $password)->insecure();
@@ -26,8 +25,7 @@ use K3Cloud\Support\Envelope;
  *   $res  = $api->save('BD_Currency', ['NeedUpDateFields' => [], 'Model' => [...]]);
  *   $rows = $api->query('BD_Currency', ['FCURRENCYID','FNUMBER'])->rows();
  *
- * By default operations return a {@see Result} (they do NOT throw on a business
- * error); chain ->throwIfError() when you want exceptions instead.
+ * 默认情况下操作返回 {@see Result}（业务错误不抛异常）；想要异常就在链尾加 ->throwIfError()。
  */
 class K3CloudClient
 {
@@ -47,8 +45,7 @@ class K3CloudClient
     }
 
     /**
-     * Build the transport for a given config. Overridable seam so a subclass that
-     * injects a custom transport can keep it across fluent reconfiguration.
+     * 为给定配置构建传输层。可覆盖的接缝：注入了自定义传输层的子类，可在链式重配置时保留它。
      */
     protected function makeTransport(Config $config): Transport
     {
@@ -60,11 +57,11 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
-     |  Named constructors (lower the barrier to entry)
+     |  具名构造器（降低上手门槛）
      * ------------------------------------------------------------------- */
 
     /**
-     * Third-party application signing (app id + app secret). No session/cookies.
+     * 第三方应用签名（AppID + AppSecret）。不使用会话/Cookie。
      */
     public static function appSignature(
         string $serverUrl,
@@ -79,7 +76,7 @@ class K3CloudClient
     }
 
     /**
-     * Classic username / password session login.
+     * 经典用户名 / 密码会话登录。
      */
     public static function password(
         string $serverUrl,
@@ -105,17 +102,16 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
-     |  Entity / bill builders
+     |  实体 / 单据构建器
      * ------------------------------------------------------------------- */
 
     /**
-     * Start building a form payload by its entity code (schema-free).
+     * 以实体编码开始构建表单载荷（schema-free）。
      *
-     * Returns a developer-registered Entity subclass when one exists for the
-     * form id (see {@see Entity::register()}), otherwise the generic base
-     * {@see Entity}. Never fails on an unknown id — the base accepts any field.
+     * 若该 formId 有开发者注册的 Entity 子类（见 {@see Entity::register()}）则返回它，
+     * 否则返回通用基类 {@see Entity}。未知 id 从不报错——基类接受任意字段。
      *
-     * @param array<string,mixed> $initial full data payload, or a bare Model dict
+     * @param array<string,mixed> $initial 完整数据载荷，或裸 Model 字典
      */
     public function bill(string $formId, array $initial = []): Entity
     {
@@ -127,8 +123,7 @@ class K3CloudClient
     }
 
     /**
-     * Start building with a typed entity class, so the returned value is the
-     * concrete subclass (PHPStan / Intelephense resolve T from the ::class arg).
+     * 以带类型的实体类开始构建，使返回值就是具体子类（PHPStan / Intelephense 从 ::class 实参推断 T）。
      *
      * @template T of Entity
      *
@@ -143,28 +138,26 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
-     |  Fluent options — identical for both auth modes.
-     |  Each returns a new, same-class client built from an updated immutable
-     |  Config. The transport is rebuilt so the new setting takes effect, and the
-     |  existing auth is *rebased* onto it: a signature strategy is stateless, and
-     |  a session strategy keeps its live kdsessionid (no re-login) as long as the
-     |  credential identity is unchanged. So chaining is safe to do at any time.
+     |  链式选项——两种认证方式完全一致。
+     |  每个都返回一个由更新后的不可变 Config 构造的同类新客户端。传输层会重建以使新设置生效，
+     |  并把现有鉴权*重绑定*到其上：签名策略无状态，会话策略在凭据身份未变时保留其活动
+     |  kdsessionid（不重新登录）。因此随时链式调用都安全。
      * ------------------------------------------------------------------- */
 
-    /** Trust any TLS certificate (self-signed / on-premise installs). */
+    /** 信任任意 TLS 证书（自签 / 本地部署）。 */
     public function insecure(): static
     {
         return $this->withConfig($this->config->withTlsVerification(false));
     }
 
-    /** Enforce TLS certificate verification (the default). */
+    /** 强制 TLS 证书校验（默认）。 */
     public function secure(): static
     {
         return $this->withConfig($this->config->withTlsVerification(true));
     }
 
     /**
-     * Set connect / request timeouts (seconds).
+     * 设置连接 / 请求超时（秒）。
      */
     public function withTimeouts(int $connectTimeout, int $requestTimeout): static
     {
@@ -172,8 +165,7 @@ class K3CloudClient
     }
 
     /**
-     * Rebuild a same-class client from a new config, carrying the current session
-     * across by rebasing the existing auth onto the freshly built transport.
+     * 由新配置重建同类客户端：重建传输层，并把现有鉴权重绑定到新传输层，从而带过当前会话。
      */
     protected function withConfig(Config $config): static
     {
@@ -183,11 +175,11 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
-     |  Generic request pipeline
+     |  通用请求管线
      * ------------------------------------------------------------------- */
 
     /**
-     * Call any DynamicFormService operation by its short name (e.g. "Save").
+     * 以短名（如 "Save"）调用任意 DynamicFormService 操作。
      *
      * @param list<mixed> $parameters
      */
@@ -197,7 +189,7 @@ class K3CloudClient
     }
 
     /**
-     * Call a service by its fully-qualified stub name.
+     * 以服务全限定 stub 名调用。
      *
      * @param list<mixed> $parameters
      */
@@ -210,7 +202,7 @@ class K3CloudClient
 
         $response = $this->transport->send($this->auth->decorate($request));
 
-        // One transparent retry when the strategy says credentials went stale.
+        // 当策略判定凭据已失效时，做一次透明重试。
         if ($this->auth->shouldRetry($request, $response)) {
             $response = $this->transport->send($this->auth->decorate($request));
         }
@@ -228,7 +220,7 @@ class K3CloudClient
                 'Content-Type' => 'application/json; charset=UTF-8',
                 'Accept'       => 'application/json',
                 'Connection'   => 'keep-alive',
-                // Disable the "Expect: 100-continue" delay on large POST bodies.
+                // 关闭大 POST 体上的 "Expect: 100-continue" 延迟。
                 'Expect'       => '',
                 'User-Agent'   => 'k3cloud-client-php/1.0 (+https://github.com/xyj2156/k3cloud-client)',
             ],
@@ -239,7 +231,7 @@ class K3CloudClient
     {
         $trimmed = ltrim($body);
 
-        // Gateway/auth failures sometimes come back as plain text.
+        // 网关/鉴权失败有时以纯文本返回。
         if ($trimmed === '') {
             return new Result($body, null, $status);
         }
@@ -249,7 +241,7 @@ class K3CloudClient
             return new Result($body, $decoded, $status);
         }
 
-        // Non-JSON: surface it. "response_error:" was the classic signing failure.
+        // 非 JSON：直接抛出。"response_error:" 是经典的签名失败前缀。
         if (str_starts_with($trimmed, 'response_error:') || $status >= 400) {
             throw new ApiException(new Result($body, null, $status), mb_substr($body, 0, 500), $status);
         }
@@ -258,11 +250,11 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
-     |  Business operations
+     |  业务操作
      * ------------------------------------------------------------------- */
 
     /**
-     * @param array<mixed>|string $model Save payload (typically ["NeedUpDateFields"=>[],"Model"=>[...]]).
+     * @param array<mixed>|string $model Save 载荷（典型为 ["NeedUpDateFields"=>[],"Model"=>[...]]）。
      */
     public function save(string $formId, array|string $model): Result
     {
@@ -280,7 +272,7 @@ class K3CloudClient
     }
 
     /**
-     * Read a record. $data keys: Number / Id / EntryIds / InterationFlags.
+     * 读取单条记录。$data 常用键：Number / Id / EntryIds / InterationFlags。
      *
      * @param array{Number?:string,Id?:string,EntryIds?:string,InterationFlags?:string}|string $data
      */
@@ -290,8 +282,7 @@ class K3CloudClient
     }
 
     /**
-     * Submit (提交). Identifier-family payload — not a Model. Common keys shown
-     * so the editor can complete them; unknown keys still pass through untouched.
+     * 提交（Submit）。标识族载荷——不是 Model。列出常用键以便编辑器补全；未知键仍原样透传。
      *
      * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string,UseBatControlTransform?:bool|string}|string $data
      */
@@ -301,7 +292,7 @@ class K3CloudClient
     }
 
     /**
-     * Audit (审核).
+     * 审核（Audit）。
      *
      * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string,UseBatControlTransform?:bool|string}|string $data
      */
@@ -311,7 +302,7 @@ class K3CloudClient
     }
 
     /**
-     * Un-audit (反审核).
+     * 反审核（UnAudit）。
      *
      * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string}|string $data
      */
@@ -321,7 +312,7 @@ class K3CloudClient
     }
 
     /**
-     * Delete (删除).
+     * 删除（Delete）。
      *
      * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string}|string $data
      */
@@ -371,7 +362,7 @@ class K3CloudClient
     }
 
     /**
-     * Execute an arbitrary operation code against a form.
+     * 对某个单据执行任意操作编码。
      */
     public function executeOperation(string $formId, string $operation, array|string $data): Result
     {
@@ -379,7 +370,7 @@ class K3CloudClient
     }
 
     /**
-     * Raw single-parameter bill query (JSON body). Accepts an array or string.
+     * 原始的单参数单据查询（JSON 体）。接受数组或字符串。
      */
     public function executeBillQuery(array|string $data): Result
     {
@@ -387,7 +378,7 @@ class K3CloudClient
     }
 
     /**
-     * Newer bill query (V7.4+). Accepts an array or JSON string.
+     * 较新的单据查询（V7.4+）。接受数组或 JSON 字符串。
      */
     public function billQuery(array|string $data): Result
     {
@@ -395,7 +386,7 @@ class K3CloudClient
     }
 
     /**
-     * Ergonomic wrapper over ExecuteBillQuery.
+     * ExecuteBillQuery 的便捷封装。
      *
      *   $api->query('SAL_SaleOrder', ['FSBILLNO','FTOTALAMOUNT'], [
      *       'FilterString' => "FDate >= '2024-01-01'",
@@ -462,7 +453,7 @@ class K3CloudClient
     }
 
     /**
-     * Force (password-mode) re-authentication before the next request.
+     * 强制（密码模式下）在下一个请求前重新鉴权。
      */
     public function relogin(): void
     {

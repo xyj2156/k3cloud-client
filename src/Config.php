@@ -7,15 +7,15 @@ namespace K3Cloud;
 use K3Cloud\Exception\ConfigException;
 
 /**
- * Immutable connection + credential configuration for a {@see K3CloudClient}.
+ * {@see K3CloudClient} 所用的不可变连接 + 凭据配置。
  *
- * Two authentication modes are supported:
- *  - MODE_SIGNATURE : third-party app id / app secret, per-request HMAC headers.
- *  - MODE_SESSION   : classic username / password, AuthService.ValidateUser login
- *                     followed by a kdsessionid cookie session.
+ * 支持两种认证方式：
+ *  - MODE_SIGNATURE ：第三方 AppID / AppSecret，按请求计算 HMAC 头。
+ *  - MODE_SESSION   ：经典用户名 / 密码，先 AuthService.ValidateUser 登录，
+ *                     再使用 kdsessionid Cookie 会话。
  *
- * Use the static helpers {@see Config::appSignature()} and
- * {@see Config::password()} rather than the constructor for clarity.
+ * 为清晰起见，请使用静态方法 {@see Config::appSignature()} 与
+ * {@see Config::password()}，而非直接构造。
  */
 final class Config
 {
@@ -23,8 +23,8 @@ final class Config
     public const MODE_SESSION = 'session';
 
     /**
-     * Mask used to unmask the gateway secret from the private half of the app id.
-     * This constant is part of the documented K/3 Cloud signing protocol.
+     * 用于从 AppID 私有段还原网关密钥的掩码。
+     * 该常量是公开的 K/3 Cloud 签名协议的一部分。
      */
     public const GATEWAY_MASK = '0054f397c6234378b09ca7d3e5debce7';
 
@@ -46,7 +46,7 @@ final class Config
     }
 
     /**
-     * Third-party application (app id + app secret) signing mode.
+     * 第三方应用（AppID + AppSecret）签名模式。
      */
     public static function appSignature(
         string $serverUrl,
@@ -70,7 +70,7 @@ final class Config
     }
 
     /**
-     * Username / password session mode.
+     * 用户名 / 密码会话模式。
      */
     public static function password(
         string $serverUrl,
@@ -97,8 +97,7 @@ final class Config
     }
 
     /**
-     * Turn TLS certificate verification on (default) or off. Only disable it for
-     * trusted private / on-premise installs that use self-signed certificates.
+     * 开启（默认）或关闭 TLS 证书校验。仅在受信任、使用自签证书的私有云 / 本地部署才关闭。
      */
     public function withTlsVerification(bool $verify): self
     {
@@ -111,7 +110,7 @@ final class Config
     }
 
     /**
-     * Build an updated immutable copy, reusing the current values for anything unset.
+     * 构造一个更新后的不可变副本；未传入的字段沿用当前值。
      */
     private function copy(?int $connectTimeout = null, ?int $requestTimeout = null, ?bool $verifyTls = null): self
     {
@@ -125,7 +124,7 @@ final class Config
     }
 
     /**
-     * Absolute URL for a WebAPI service, e.g.
+     * 某个 WebAPI 服务的绝对 URL，例如：
      *  save() -> ".../Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.Save.common.kdsvc"
      */
     public function serviceUrl(string $service): string

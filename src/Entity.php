@@ -7,19 +7,17 @@ namespace K3Cloud;
 use K3Cloud\Exception\ConfigException;
 
 /**
- * Schema-free fluent builder for a K/3 Cloud form payload (the Save/Draft family).
+ * 面向 K/3 Cloud 表单载荷（Save/Draft 族）的 schema-free 流式构建器。
  *
- * This is the base class. It works standalone via {@see K3CloudClient::bill()} for
- * ANY entity with NO schema, and is designed to be subclassed per entity as optional
- * sugar. Because it never gates keys, 二开 / extension fields always flow through
- * {@see self::custom()} / {@see self::package()} unchanged.
+ * 这是基类。它可通过 {@see K3CloudClient::bill()} 独立用于**任意**实体、无需 schema，
+ * 并被设计为可按实体子类化作为可选糖。由于它从不限制键名，二开 / 扩展字段总能原样通过
+ * {@see self::custom()} / {@see self::package()} 传入。
  *
- * The builder models the whole "data" object sent after the form id — top-level
- * control flags (NeedUpDateFields, IsVerifyBaseDataField, …) plus a nested
- * `Model`. Field setters write into `Model`; control flags have their own setters.
+ * 构建器建模的是跟在 form id 之后的整个 "data" 对象——顶层控制位（NeedUpDateFields、
+ * IsVerifyBaseDataField……）加上嵌套的 `Model`。字段 setter 写入 `Model`；控制位各有 setter。
  *
- * Every fluent mutator returns `static` so the concrete subclass type survives the
- * chain and reaches a terminal (save/draft/call), which return {@see Result}.
+ * 每个流式 mutator 都返回 `static`，使具体子类类型贯穿链式调用并到达终端（save/draft/call），
+ * 终端返回 {@see Result}。
  *
  *   final class SaleOrder extends Entity {
  *       public const FORM_ID = 'SAL_SaleOrder';
@@ -29,13 +27,13 @@ use K3Cloud\Exception\ConfigException;
  */
 class Entity
 {
-    /** Concrete subclasses override this with their form id. */
+    /** 具体子类用它覆盖为自己的 form id。 */
     public const FORM_ID = '';
 
-    /** @var array<string,mixed> the assembled data payload */
+    /** @var array<string,mixed> 已组装的数据载荷 */
     protected array $data = [];
 
-    /** @var array<string,class-string<self>> form id => developer class */
+    /** @var array<string,class-string<self>> form id => 开发者类 */
     private static array $registry = [];
 
     public function __construct(
@@ -49,14 +47,14 @@ class Entity
     }
 
     /* ---------------------------------------------------------------------
-     |  Factories / entry points
+     |  工厂 / 入口
      * ------------------------------------------------------------------- */
 
     /**
-     * Typed, class-static factory. `$order = SaleOrder::for($api)` resolves to
-     * SaleOrder in every IDE (the `: static` return). Subclasses just define FORM_ID.
+     * 带类型的类静态工厂。`$order = SaleOrder::for($api)` 在每个 IDE 里都解析为 SaleOrder
+     * （`: static` 返回）。子类只需定义 FORM_ID。
      *
-     * @param array<string,mixed> $initial full data payload, or a Model dict (see seed())
+     * @param array<string,mixed> $initial 完整数据载荷，或 Model 字典（见 seed()）
      */
     public static function for(K3CloudClient $api, array $initial = []): static
     {
@@ -69,9 +67,8 @@ class Entity
     }
 
     /**
-     * Register a developer entity class so the generic {@see K3CloudClient::bill()}
-     * auto-resolves `$formId` to it. Purely a convenience: an unregistered form id
-     * falls back to the base Entity, never an error.
+     * 注册一个开发者实体类，使通用 {@see K3CloudClient::bill()} 能把 `$formId` 自动解析到它。
+     * 纯属便利：未注册的 form id 回退到基类 Entity，从不报错。
      *
      * @param class-string<self> $class
      */
@@ -95,11 +92,11 @@ class Entity
     }
 
     /* ---------------------------------------------------------------------
-     |  Model field mutators (schema-free; all :static)
+     |  Model 字段 mutator（schema-free；全部 :static）
      * ------------------------------------------------------------------- */
 
     /**
-     * Set a scalar/plain field on the Model.
+     * 在 Model 上设置一个标量/普通字段。
      */
     public function set(string $key, mixed $value): static
     {
@@ -111,7 +108,7 @@ class Entity
     }
 
     /**
-     * Set a base-data reference field: {"FNumber": $number} (per-call casing override).
+     * 设置一个基础资料引用字段：{"FNumber": $number}（可按次覆盖引用键的大小写）。
      */
     public function ref(string $key, string $number, string $refKey = 'FNumber'): static
     {
@@ -123,8 +120,8 @@ class Entity
     }
 
     /**
-     * Attach a custom / 二开 field. Same as set(), named for intent and kept
-     * first-class so extension fields never require SDK support.
+     * 附加一个自定义 / 二开字段。与 set() 相同，仅为语义命名并保持其一等地位，
+     * 使扩展字段永不要求 SDK 支持。
      */
     public function custom(string $key, mixed $value): static
     {
@@ -132,7 +129,7 @@ class Entity
     }
 
     /**
-     * Append ONE row to a detail/entry segment — the ONLY append path.
+     * 向某个分录/明细段追加**一行**——唯一的追加入口。
      *
      * @param array<string,mixed>|callable(Line):void $row
      */
@@ -150,8 +147,8 @@ class Entity
     }
 
     /**
-     * Recursively merge a structure into the Model (assoc deep-merged, list values
-     * replaced). Use for partial sub-objects like {"FSaleOrderFinance": {...}}.
+     * 把一个结构递归合并进 Model（关联数组深合并、列表值整体替换）。用于像
+     * {"FSaleOrderFinance": {...}} 这样的局部子对象。
      *
      * @param array<string,mixed> $structure
      */
@@ -165,8 +162,8 @@ class Entity
     }
 
     /**
-     * Recursively merge into the WHOLE payload (control flags + Model). Advanced
-     * escape hatch for anything the named setters do not cover.
+     * 递归合并进**整个**载荷（控制位 + Model）。为具名 setter 未覆盖到的任何内容
+     * 预留的高级逃生口。
      *
      * @param array<string,mixed> $structure
      */
@@ -178,8 +175,8 @@ class Entity
     }
 
     /**
-     * Set a top-level control flag on the payload (NeedUpDateFields, SubSystemId,
-     * IsVerifyBaseDataField, ValidateRepeatJson, …).
+     * 在载荷上设置一个顶层控制位（NeedUpDateFields、SubSystemId、
+     * IsVerifyBaseDataField、ValidateRepeatJson……）。
      */
     public function control(string $key, mixed $value): static
     {
@@ -189,10 +186,10 @@ class Entity
     }
 
     /* ---------------------------------------------------------------------
-     |  Output & terminals
+     |  输出与终端
      * ------------------------------------------------------------------- */
 
-    /** @return array<string,mixed> the data payload, ready to post after the form id */
+    /** @return array<string,mixed> 数据载荷，可直接跟在 form id 之后发送 */
     public function toArray(): array
     {
         $payload = $this->data;
@@ -212,7 +209,7 @@ class Entity
     }
 
     /**
-     * Generic escape hatch: post the current payload to any DynamicFormService op.
+     * 通用逃生口：把当前载荷发送到任意 DynamicFormService 操作。
      */
     public function call(string $op, ?array $patch = null): Result
     {
@@ -220,7 +217,7 @@ class Entity
     }
 
     /**
-     * @param array<string,mixed>|null $patch merged into the Model before sending
+     * @param array<string,mixed>|null $patch 发送前合并进 Model
      *
      * @return array<string,mixed>
      */
@@ -235,10 +232,10 @@ class Entity
     }
 
     /* ---------------------------------------------------------------------
-     |  Internals
+     |  内部实现
      * ------------------------------------------------------------------- */
 
-    /** Control keys that mark an $initial array as a full payload (vs a Model dict). */
+    /** 用于把 $initial 数组判定为"完整载荷"（而非 Model 字典）的控制键。 */
     private const CONTROL_KEYS = [
         'Model', 'Creator', 'NeedUpDateFields', 'NeedSelectFields', 'NeedReturnFields',
         'IsDeleteEntry', 'SubSystemId', 'IsAutoSubmitAndAudit', 'IsVerifyBaseDataField',
@@ -247,7 +244,7 @@ class Entity
     ];
 
     /**
-     * Accept either a full data payload (has a control key) or a bare Model dict.
+     * 接受"完整数据载荷（含控制键）"或"裸 Model 字典"两种形式。
      *
      * @param array<string,mixed> $initial
      *
@@ -262,7 +259,7 @@ class Entity
     }
 
     /**
-     * @return array<string,mixed> reference to the Model sub-array (created if absent)
+     * @return array<string,mixed> 指向 Model 子数组的引用（不存在则创建）
      */
     private function &modelRef(): array
     {
