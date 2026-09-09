@@ -77,12 +77,12 @@ final class CurlTransport implements Transport
         if ($result === false) {
             $message = curl_error($handle);
             $errno = curl_errno($handle);
-            curl_close($handle);
+            // No curl_close(): it has been a no-op since PHP 8.0 and is
+            // deprecated in 8.5; the handle is released on GC.
             throw new TransportException(sprintf('HTTP request failed (%s): %s', $errno, $message), $errno);
         }
 
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-        curl_close($handle);
 
         return new HttpResponse($status, (string) $result, self::parseHeaders($headerLines));
     }
