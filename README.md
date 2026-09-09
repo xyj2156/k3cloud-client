@@ -79,6 +79,13 @@ $api = K3CloudClient::password($url, $acct, $user, $pwd)
     ->withTimeouts(10, 60);    // connect / request, seconds
 ```
 
+Fluent options can be chained at any time: each returns a new same-class client,
+the transport is rebuilt so the setting takes effect, and the current auth is
+rebased onto it. A username/password session therefore survives a reconfigure
+(no second login) as long as the credentials are unchanged — login still happens
+at most once, lazily, on the first request. Changing the credentials (or calling
+`->relogin()`) is what forces a fresh authentication.
+
 ### Advanced: building a `Config` directly
 
 If you need to compose or persist configuration before creating the client, use
