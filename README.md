@@ -1,34 +1,32 @@
-# k3cloud-client — an unofficial PHP client for the Kingdee Cloud (K/3 Cloud) WebAPI
+**简体中文** | [English](README_en.md)
 
-A small, dependency-light, **independently written** client for the K/3 Cloud
-WebAPI. It focuses on getting you productive fast and supports the **two real
-authentication modes** you will meet in the wild:
+# k3cloud-client —— 面向金蝶云（K/3 Cloud）WebAPI 的非官方 PHP 客户端
 
-- **Third-party app signing** — AppID + AppSecret, per-request `X-Kd-*` / `X-Api-*`
-  HMAC headers, no server session. Typical for the public-cloud gateway.
-- **Username / password session** — classic `AuthService.ValidateUser` login and
-  a `kdsessionid` cookie, handled lazily and transparently. Typical for private /
-  on-premise installs where no AppID was issued.
+一个轻量、无第三方依赖、**独立编写**的 K/3 Cloud WebAPI 客户端。它以"快速上手"为核心，
+支持你在真实环境里会遇到的**两种认证方式**：
 
-> **Unofficial.** This is a clean-room implementation written against the
-> documented K/3 Cloud HTTP interface. It is not affiliated with, endorsed by, or
-> derived from any official Kingdee SDK, and contains no code from any official
-> SDK package. “Kingdee” and “K/3 Cloud” are trademarks of their owner and are
-> used here only to describe the interface this client talks to.
+- **第三方应用签名** —— AppID + AppSecret，按请求计算 `X-Kd-*` / `X-Api-*` HMAC 头，
+  不使用服务端会话。常见于公有云网关。
+- **用户名 / 密码会话** —— 经典的 `AuthService.ValidateUser` 登录 + `kdsessionid` Cookie，
+  惰性、透明地自动完成。常见于未下发 AppID 的私有云 / 本地部署。
+
+> **非官方。** 这是针对公开的 K/3 Cloud HTTP 接口做的 clean-room 独立实现，与任何金蝶
+> 官方 SDK 无隶属、认可或衍生关系，且不含任何官方 SDK 代码。“金蝶 / Kingdee”“K/3 Cloud”
+> 为其权利人所有，这里仅用于描述本客户端所对接的接口。
 
 ---
 
-## Install
+## 安装
 
 ```bash
 composer require xyj2156/k3cloud-client
 ```
 
-Requires PHP 8.1+ and `ext-curl`.
+需要 PHP 8.1+ 与 `ext-curl`。
 
-## Quick start
+## 快速上手
 
-### Option A — third-party app signing
+### 方式 A —— 第三方应用签名
 
 ```php
 use K3Cloud\K3CloudClient;
@@ -49,7 +47,7 @@ foreach ($rows->rows() as [$id, $number, $name]) {
 }
 ```
 
-### Option B — username / password session
+### 方式 B —— 用户名 / 密码会话
 
 ```php
 use K3Cloud\K3CloudClient;
@@ -59,7 +57,7 @@ $api = K3CloudClient::password(
     acctId:    '62f3c9b0xxxxxxxx',
     userName:  'administrator',
     password:  'your-password',
-)->insecure();   // only for self-signed / on-premise certs
+)->insecure();   // 仅自签证书 / 本地部署需要
 
 $created = $api->save('BD_Currency', [
     'NeedUpDateFields' => [],
@@ -70,27 +68,22 @@ $created = $api->save('BD_Currency', [
 echo $created->id(), ' / ', $created->number(), "\n";
 ```
 
-Both modes are created the same way — a named constructor returning a client.
-Options chain identically regardless of auth mode:
+两种方式的创建完全一致 —— 都是一个"返回客户端"的具名构造器。选项链式写法也与认证方式无关：
 
 ```php
 $api = K3CloudClient::password($url, $acct, $user, $pwd)
-    ->insecure()               // trust self-signed certs
-    ->withTimeouts(10, 60);    // connect / request, seconds
+    ->insecure()               // 信任自签证书
+    ->withTimeouts(10, 60);    // 连接 / 请求超时，单位秒
 ```
 
-Fluent options can be chained at any time: each returns a new same-class client,
-the transport is rebuilt so the setting takes effect, and the current auth is
-rebased onto it. A username/password session therefore survives a reconfigure
-(no second login) as long as the credentials are unchanged — login still happens
-at most once, lazily, on the first request. Changing the credentials (or calling
-`->relogin()`) is what forces a fresh authentication.
+链式选项随时可调用：每个都返回同类新客户端，传输层重建以使设置生效，并把当前鉴权"搬迁"过去。
+因此在凭据不变的前提下，用户名/密码会话可跨一次重配置存活（不会二次登录）——登录仍然**至多一次、
+惰性、发生在第一个请求**。只有更换凭据（或调用 `->relogin()`）才会触发一次新的认证。
 
-### Advanced: building a `Config` directly
+### 进阶：直接构造 `Config`
 
-If you need to compose or persist configuration before creating the client, use
-`K3Cloud\Config` explicitly and inject it — functionally equivalent to the
-named constructors:
+如果你需要在创建客户端之前先组装 / 持久化配置，可显式使用 `K3Cloud\Config` 再注入 ——
+与具名构造器等价：
 
 ```php
 use K3Cloud\Config;
@@ -101,42 +94,40 @@ $api = new K3CloudClient(
 );
 ```
 
-That is the whole onboarding story: create the client, call an operation. Login
-and signing are automatic.
+上手就这么简单：创建客户端、调用操作。登录与签名都自动完成。
 
-## What you get back
+## 返回值
 
-Every operation returns a `K3Cloud\Result`:
+每个操作都返回一个 `K3Cloud\Result`：
 
-| Method            | Meaning |
-|-------------------|---------|
-| `->payload()`     | decoded body (array / scalar) |
-| `->rows()`        | list of rows for query responses |
-| `->isSuccess()`   | business success flag |
-| `->errorMessage()`| first error message, or `null` |
-| `->id()` / `->number()` | new record id / number from a Save |
-| `->throwIfError()`| throws `ApiException` unless successful |
+| 方法                | 含义 |
+|---------------------|------|
+| `->payload()`       | 解码后的响应体（数组 / 标量） |
+| `->rows()`          | 查询响应的行列表 |
+| `->isSuccess()`     | 业务是否成功 |
+| `->errorMessage()`  | 首条错误信息，或 `null` |
+| `->id()` / `->number()` | Save 返回的新单内码 / 编码 |
+| `->throwIfError()`  | 不成功则抛 `ApiException` |
 
-Operations **do not throw** on a business error by default — chain
-`->throwIfError()` when you prefer exceptions. Transport / auth failures do
-throw (`TransportException`, `AuthException`).
+默认情况下，业务错误**不抛异常**——想要异常就在链尾加 `->throwIfError()`。传输 / 鉴权失败则会抛
+（`TransportException`、`AuthException`）。
 
-## Operations
+## 操作一览
 
-`save`, `batchSave`, `draft`, `view`, `submit`, `audit`, `unaudit`, `delete`,
-`allocate`, `cancelAllocate`, `cancelAssign`, `push`, `groupSave`, `disassembly`,
-`flexSave`, `getSysReportData`, `executeOperation`, `executeBillQuery`,
-`billQuery`, `query`, `queryBusinessInfo`, `queryGroupInfo`, `workflowAudit`,
-`groupDelete`, `switchOrg`, `sendMsg`, `attachmentUpload`, `attachmentDownload`.
+`save`、`batchSave`、`draft`、`view`、`submit`、`audit`、`unaudit`、`delete`、
+`allocate`、`cancelAllocate`、`cancelAssign`、`push`、`groupSave`、`disassembly`、
+`flexSave`、`getSysReportData`、`executeOperation`、`executeBillQuery`、
+`billQuery`、`query`、`queryBusinessInfo`、`queryGroupInfo`、`workflowAudit`、
+`groupDelete`、`switchOrg`、`sendMsg`、`attachmentUpload`、`attachmentDownload`。
 
-Anything not listed is still reachable through the generic entry points:
+未列出的仍可通过通用入口调用：
 
 ```php
-$api->operation('AttachmentDownLoad', [ $payload ]);      // short name
+$api->operation('AttachmentDownLoad', [ $payload ]);      // 短名
 $api->service('Kingdee.BOS.WebApi.ServicesStub.Some.Service', [ ...$params ]);
 ```
 
-### The `query()` helper
+### `query()` 便捷方法
 
 ```php
 $result = $api->query('SAL_SaleOrder', ['FSBILLNO', 'FTOTALAMOUNT'], [
@@ -146,20 +137,19 @@ $result = $api->query('SAL_SaleOrder', ['FSBILLNO', 'FTOTALAMOUNT'], [
 ]);
 ```
 
-## Building a bill (fluent)
+## 流式构建单据
 
-Instead of hand-assembling the nested `Model`, build it. The base `Entity` is
-schema-free — any entity and any 二开 / extension field work without SDK support —
-and you can subclass it per entity for typed helpers and IDE completion.
+不用手写嵌套的 `Model`，用构建器。基类 `Entity` 是 schema-free 的——任意实体、任意二开 /
+扩展字段无需 SDK 支持即可使用；你也可以为某个实体写子类，获得带类型的 helper 与 IDE 补全。
 
 ```php
 use K3Cloud\K3CloudClient;
 
-// Generic (no class needed) — returns the base Entity:
+// 通用（无需类）——返回基类 Entity：
 $api->bill('SAL_SaleOrder')
-    ->ref('FBillTypeID', 'XSDD01_SYS', 'FNUMBER')   // base-data reference
+    ->ref('FBillTypeID', 'XSDD01_SYS', 'FNUMBER')   // 基础资料引用
     ->ref('FCustId', '16.195.06.0001')
-    ->custom('F_PEYC_Decimal', '1710')              // 二开 field, no schema
+    ->custom('F_PEYC_Decimal', '1710')              // 二开字段，无需 schema
     ->line('FSaleOrderEntry', fn($row) => $row
         ->ref('FMaterialId', '02.04.03.089')
         ->set('FQty', '1.000'))
@@ -168,7 +158,7 @@ $api->bill('SAL_SaleOrder')
     ->throwIfError();
 ```
 
-Or with your own subclass (typed completion, `: static` keeps the concrete type):
+或用你自己的子类（类型补全，`: static` 让具体类型贯穿链式调用）：
 
 ```php
 use K3Cloud\Entity;
@@ -179,76 +169,70 @@ final class SaleOrder extends Entity
     public function customer(string $n): static { return $this->ref('FCustId', $n); }
 }
 
-$order = $api->entity(SaleOrder::class);   // typed: $order is SaleOrder
-// or class-static: $order = SaleOrder::for($api);
+$order = $api->entity(SaleOrder::class);   // 带类型：$order 就是 SaleOrder
+// 或类静态工厂：$order = SaleOrder::for($api);
 $order->customer('16.195.06.0001')->save();
 
-// register so the string entry auto-resolves too (optional convenience):
+// 可选便利：注册后，字符串入口也能自动解析到子类：
 Entity::register(SaleOrder::FORM_ID, SaleOrder::class);
 $api->bill('SAL_SaleOrder');               // → SaleOrder
 ```
 
-Mutators: `set/ref/custom` overwrite a field; `line()` is the only append path;
-`package()`/terminal `$patch` deep-merge the Model (list values replace);
-`control()`/`mergePayload()` handle top-level flags; `save()/draft()/call()` are
-the terminals returning `Result`. Design rationale lives in
-[`docs/design-bill-builder.md`](docs/design-bill-builder.md).
+mutator 语义：`set/ref/custom` 覆盖某个字段；`line()` 是唯一的追加入口；
+`package()` / 终端 `$patch` 对 Model 递归深合并（列表值整体替换）；`control()` /
+`mergePayload()` 处理顶层控制位；`save()/draft()/call()` 是返回 `Result` 的终端。
+设计依据见 [`docs/design-bill-builder.md`](docs/design-bill-builder.md)。
 
-## Configuration notes
+## 配置说明
 
-- **`serverUrl`** — the WebAPI root, e.g. `https://host:port/K3Cloud` (private)
-  or `https://api.kingdee.com/galaxyapi/` (public). A trailing slash is optional.
-- **TLS** — verification is **on by default**. Call `->insecure()` on the client
-  (or `Config::withoutTlsVerification()`) for self-signed / private installs.
-- **Timeouts** — `->withTimeouts($connect, $request)` on the client, or
-  `Config::withTimeouts(...)` when building a `Config` directly.
+- **`serverUrl`** —— WebAPI 根地址，如 `https://host:port/K3Cloud`（私有云）或
+  `https://api.kingdee.com/galaxyapi/`（公有云）。结尾斜杠可有可无。
+- **TLS** —— 默认**开启**校验。自签 / 本地部署请在客户端上调用 `->insecure()`
+  （或 `Config::withoutTlsVerification()`）。
+- **超时** —— 客户端 `->withTimeouts($connect, $request)`，或直接构造 `Config` 时用
+  `Config::withTimeouts(...)`。
 
-### Login payload compatibility
+### 登录参数兼容性
 
-Password mode calls `AuthService.ValidateUser` with the common
-`[acctId, userName, password, lcid]` order. A minority of builds expect a
-different argument list. If login is rejected, subclass `SessionAuth` and
-override `loginParameters()` — the rest of the client is unchanged.
+密码模式以常见的 `[acctId, userName, password, lcid]` 顺序调用 `AuthService.ValidateUser`。
+少数版本期望不同的参数列表。若你的服务端拒绝登录，请继承 `SessionAuth` 并覆盖 `loginParameters()`
+——其余代码无需改动。
 
-## Development
+## 开发
 
 ```bash
 composer install
-composer test        # runs PHPUnit
+composer test        # 运行 PHPUnit
 ```
 
-Examples live in `examples/` and can be run after filling in credentials.
+示例在 `examples/`，填入凭据后即可运行。
 
-To (re)build the cleaned entity/field reference used by the metadata layer, drop
-a fresh K/3 Cloud export somewhere git-ignored (e.g. `.docs/raw/`) and run:
+要（重新）构建元数据层使用的清洗后实体/字段引用，把一份新的 K/3 Cloud 导出放到被 git 忽略的位置
+（如 `.docs/raw/`）后运行：
 
 ```bash
 php tools/build-metadata.php [.docs/raw/entity.json] [.docs/raw/field.json] [.docs]
 ```
 
-Add `--scaffold` to also emit a starting per-entity PHP class (FORM_ID + field-name
-constants + entry-line helpers) into a git-ignored `.docs/scaffold/` — a template to
-copy into your own project and edit. `--with-custom` folds 二开 fields in as
-constants too; `--namespace=...` sets the generated namespace. None of it is a
-whitelist — unknown fields still work via `->custom()/->package()`.
+加 `--scaffold` 会额外把"每个实体的起始 PHP 类"（FORM_ID + 字段名常量 + 分录 helper）生成到被
+git 忽略的 `.docs/scaffold/`——供你拷进自己工程再编辑。`--with-custom` 会把二开字段也作为常量并进去；
+`--namespace=...` 指定生成的命名空间。这些都不是白名单——未知字段仍可走 `->custom()/->package()`。
 
 ```bash
 php tools/build-metadata.php ... --scaffold --with-custom --namespace=App\\K3Cloud\\Entities
 ```
 
-Only the cleaned artifacts (`kingdee_field.standard.json`,
-`kingdee_field.custom.json`, the report) are tracked; the raw export never is.
+只有清洗后的产物（`kingdee_field.standard.json`、`kingdee_field.custom.json`、报告）会被跟踪；
+原始导出永不入库。
 
-## Roadmap
+## 路线图
 
-- **Fluent Bill builder** — *shipped* (`Entity`/`Line`, `->bill()/->entity()`,
-  typed subclasses, named terminals, `->call()`, merge semantics, identifier-op
-  `@param` completion). Design in
-  [`docs/design-bill-builder.md`](docs/design-bill-builder.md).
-- **Metadata scaffold** — *shipped*: `build-metadata.php --scaffold` emits a
-  starting per-entity class + field-name constants + entry helpers (optionally
-  `--with-custom` to include 二开 fields); output is a git-ignored dev template.
+- **流式单据构建器** —— *已交付*（`Entity`/`Line`、`->bill()/->entity()`、带类型子类、具名终端、
+  `->call()`、合并语义、标识族操作的 `@param` 补全）。设计见
+  [`docs/design-bill-builder.md`](docs/design-bill-builder.md)。
+- **元数据脚手架** —— *已交付*：`build-metadata.php --scaffold` 生成每个实体的起始类 + 字段名常量 +
+  分录 helper（可选 `--with-custom` 并入二开字段）；产物为被 git 忽略的开发模板。
 
-## License
+## 许可
 
-MIT — see [LICENSE](LICENSE).
+MIT —— 见 [LICENSE](LICENSE)。
