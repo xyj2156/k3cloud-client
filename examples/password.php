@@ -3,17 +3,15 @@
 declare(strict_types=1);
 
 /**
- * Example: classic username / password session login.
+ * 示例：经典用户名 / 密码会话登录。
  *
- * Run:  php examples/password.php
+ * 运行：  php examples/password.php
  *
- * This is the mode most private / on-premise ("买断版") K/3 Cloud installs use
- * when no third-party AppID has been issued. The client performs the
- * AuthService.ValidateUser login once, transparently, on the first call, and
- * reuses the kdsessionid cookie afterwards.
+ * 这是多数私有云 / 本地部署（“买断版”）K/3 Cloud 在未下发第三方 AppID 时采用的方式。
+ * 客户端会在第一个调用时透明地完成一次 AuthService.ValidateUser 登录，之后复用
+ * kdsessionid Cookie。
  *
- * If your server uses self-signed HTTPS, keep the ->insecure() call below —
- * otherwise remove it (verification is on by default).
+ * 若你的服务器使用自签 HTTPS，请保留下面的 ->insecure() 调用——否则删掉它（默认开启校验）。
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -29,11 +27,11 @@ $api = K3CloudClient::password(
     orgNum:    0,
 )->insecure();
 
-// A view call — the login happens automatically before the request goes out.
+// 一次 view 调用——登录会在请求发出前自动完成。
 $result = $api->view('BD_MATERIAL', ['Number' => '01.001', 'Id' => ''])
     ->throwIfError();
 
 print_r($result->payload());
 
-// Force a re-login (e.g. after switching organisation).
+// 强制重新登录（例如切换组织之后）。
 $api->relogin();

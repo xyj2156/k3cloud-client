@@ -3,31 +3,28 @@
 declare(strict_types=1);
 
 /**
- * Metadata cleaner / normalizer for K/3 Cloud entity + field exports.
+ * K/3 Cloud 实体 + 字段导出的清洗 / 规范化工具。
  *
- * Reads a (possibly messy, 二开-contaminated) export of entities + fields and
- * produces clean, grouped artifacts under .docs/, splitting genuine
- * secondary-development ("二开") custom fields from standard platform fields.
+ * 读取一份（可能杂乱、混有二开字段的）实体 + 字段导出，在 .docs/ 下产出干净、分组好的
+ * 产物，并把真正的二次开发（"二开"）自定义字段与平台标准字段区分开。
  *
- * Usage:
+ * 用法：
  *   php tools/build-metadata.php [entity.json] [field.json] [outDir] [--scaffold] [options]
  *
- * Positionals default to the known export location + .docs/. With --scaffold it
- * ALSO emits a starting per-entity PHP class (FORM_ID + field-name constants +
- * entry-line helpers) into a git-ignored scaffold dir — a template for developers
- * to copy/edit into their own project. Nothing generated here is a whitelist.
+ * 位置参数默认指向已知的导出位置 + .docs/。带 --scaffold 时，还会额外把"每个实体的起始
+ * PHP 类"（FORM_ID + 字段名常量 + 分录 helper）生成到一个被 git 忽略的 scaffold 目录——
+ * 供开发者拷进自己工程再编辑。这里生成的任何东西都不是白名单。
  *
- * Options (with --scaffold):
- *   --namespace=App\K3Cloud\Entities   class namespace for generated files
- *   --scaffold-out=<dir>               output dir (default <outDir>/scaffold)
- *   --with-custom                      also emit 二开 fields as constants
+ * 选项（配合 --scaffold）：
+ *   --namespace=App\K3Cloud\Entities   生成文件的命名空间
+ *   --scaffold-out=<dir>               输出目录（默认 <outDir>/scaffold）
+ *   --with-custom                      也把二开字段作为常量生成
  *
- * Classification rule (deliberately narrow to avoid false positives):
- *   a field is treated as CUSTOM when kingdee_name matches  ^F_[A-Za-z0-9]{2,4}_
- *   e.g. F_PAEZ_lixi, F_PEYC_Decimal, F_PDQP_PrintTimes.
- * Standard platform sub-fields that merely contain "_" (FBillAmount_LC,
- * FEntity_Link_FFlowId, FEntity_FENTRYID, FMaterialID_Sal, ...) are NOT custom
- * and are kept.
+ * 分类规则（有意收窄以避免误判）：
+ *   当 kingdee_name 匹配 ^F_[A-Za-z0-9]{2,4}_ 时，字段视为 CUSTOM，
+ *   例如 F_PAEZ_lixi、F_PEYC_Decimal、F_PDQP_PrintTimes。
+ *   仅仅是"含下划线"的标准平台子字段（FBillAmount_LC、FEntity_Link_FFlowId、
+ *   FEntity_FENTRYID、FMaterialID_Sal……）不是二开，予以保留。
  */
 
 $positional = [];
@@ -58,7 +55,7 @@ if (!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)) {
 $entities = read_json($inEntity);
 $fields   = read_json($inField);
 
-/** entity_id => entity meta */
+/** entity_id => 实体元信息 */
 $entById = [];
 foreach ($entities as $e) {
     $entById[(int) $e['id']] = $e;
@@ -66,8 +63,8 @@ foreach ($entities as $e) {
 
 /**
  * index[entity_id][segment_code][field_key] => ['key','title','length']
- * custom[entity_id][segment_code][field_key] => same shape
- * plus bookkeeping for the report.
+ * custom[entity_id][segment_code][field_key] => 同结构
+ * 另外为报告做一些簿记。
  */
 $standard = [];
 $custom   = [];
@@ -100,7 +97,7 @@ foreach ($fields as $f) {
     $slot = $$bucket;
     if (isset($slot[$eid][$seg][$key])) {
         $dupes++;
-        continue; // keep first occurrence; drop exact duplicates within a segment
+        continue; // 保留首次出现；丢弃同一分段内的完全重复项
     }
     $slot[$eid][$seg][$key] = ['key' => $key, 'title' => $title, 'length' => $len];
     $slot[$eid]['_seg_names'][$seg] = $segName;
@@ -110,13 +107,12 @@ foreach ($fields as $f) {
 $standardOut = build_entities($standard, $entById);
 $customOut   = build_entities($custom, $entById);
 
-// NOTE: no separate entity file is emitted. Entity code/name/module is embedded
-// in every entity block of the field files, and the raw provided exports (entity
-// + the full field dump) must never be committed — see .gitignore /.docs rules.
+// 注意：不再单独产出实体文件。实体的 code/name/module 已内嵌在字段文件的每个实体块里，
+// 且你提供的原始导出（实体 + 完整字段转储）绝不能提交——见 .gitignore 的 /.docs 规则。
 write_json("$outDir/kingdee_field.standard.json", $standardOut);
 write_json("$outDir/kingdee_field.custom.json", $customOut);
 
-// ---- report ----
+// ---- 报告 ----
 $stdFieldCount  = count_flat($standardOut);
 $custFieldCount = count_flat($customOut);
 
@@ -187,7 +183,7 @@ foreach ($entities as $e) {
 
 file_put_contents("$outDir/kingdee_metadata_report.md", implode("\n", $lines) . "\n");
 
-/* ---------------- optional: class scaffold ---------------- */
+/* ---------------- 可选：类脚手架 ---------------- */
 
 $scaffoldFiles = 0;
 if ($scaffold) {
@@ -221,7 +217,7 @@ if ($scaffold) {
     file_put_contents(
         "$scaffoldOut/map.php",
         "<?php\n\ndeclare(strict_types=1);\n\n"
-        . "/** entity_code => generated class FQCN. Loop these into Entity::register(\$code, \$class). */\n"
+        . "/** entity_code => 生成的类 FQCN。把它们逐条喂给 Entity::register(\$code, \$class)。 */\n"
         . "return [\n" . implode("\n", $rows) . "\n];\n"
     );
 }
@@ -235,7 +231,7 @@ if ($scaffold) {
         . ($withCustom ? "  (with 二开 constants)" : '') . "\n";
 }
 
-/* ---------------- helpers ---------------- */
+/* ---------------- 辅助函数 ---------------- */
 
 function read_json(string $path): array
 {
@@ -256,7 +252,7 @@ function write_json(string $path, mixed $data): void
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
 }
 
-/** Turn an index[entity_id] into a sorted list of entity blocks with segments. */
+/** 把 index[entity_id] 转成按实体排序、带分段的实体块列表。 */
 function build_entities(array $index, array $entById): array
 {
     $out = [];
@@ -305,7 +301,7 @@ function count_flat(array $entityBlocks): int
     return $n;
 }
 
-/** SAL_SaleOrder -> SalSaleorder (a starting name; developer renames freely). */
+/** SAL_SaleOrder -> SalSaleorder（起始命名；开发者可随意改名）。 */
 function studly(string $code): string
 {
     $parts = preg_split('/[^A-Za-z0-9]+/', $code, -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -317,13 +313,13 @@ function studly(string $code): string
     return $out !== '' ? $out : 'Entity';
 }
 
-/** FCustId / FBUSINESSDEPTID.FName -> FLD_FCUSTID / FLD_FBUSINESSDEPTID_FNAME. */
+/** FCustId / FBUSINESSDEPTID.FName -> FLD_FCUSTID / FLD_FBUSINESSDEPTID_FNAME。 */
 function const_name(string $key): string
 {
     return 'FLD_' . strtoupper(preg_replace('/[^A-Za-z0-9]/', '_', $key) ?? '');
 }
 
-/** Fold custom (二开) fields into the standard blocks by entity + segment. */
+/** 把二开（自定义）字段按实体 + 分段折入标准块。 */
 function merge_blocks(array $std, array $cus): array
 {
     $byId = [];
@@ -368,7 +364,7 @@ function merge_blocks(array $std, array $cus): array
     return $std;
 }
 
-/** Render one editable scaffold class for an entity block. */
+/** 为一个实体块渲染一个可编辑的脚手架类。 */
 function render_entity_class(array $block, string $class, string $namespace): string
 {
     $code = (string) $block['entity_code'];
@@ -381,9 +377,9 @@ function render_entity_class(array $block, string $class, string $namespace): st
     $out .= "/**\n";
     $out .= " * " . ($name !== '' ? "$name " : '') . "($code)" . ($module !== '' ? " — $module" : '') . ".\n";
     $out .= " *\n";
-    $out .= " * Generated SCAFFOLD from K/3 Cloud metadata — copy into your project and edit.\n";
-    $out .= " * These constants/helpers are a convenience for completion, NOT a whitelist:\n";
-    $out .= " * any other field (incl. 二开) still works via ->set()/->custom()/->package()/->line().\n";
+    $out .= " * 由 K/3 Cloud 元数据生成的脚手架——拷进你的工程后可自由编辑。\n";
+    $out .= " * 下面的常量/helper 只是为补全提供便利，并非白名单：\n";
+    $out .= " * 其它任意字段（含二开）仍可通过 ->set()/->custom()/->package()/->line() 使用。\n";
     $out .= " */\n";
     $out .= "final class $class extends Entity\n{\n";
     $out .= "    public const FORM_ID = " . var_export($code, true) . ";\n";
