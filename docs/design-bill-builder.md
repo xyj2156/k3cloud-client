@@ -1,6 +1,6 @@
 # Design: a fluent Bill builder (二开-safe)
 
-Status: **design finalized** (decisions 1–4 locked; implementation pending go).
+Status: **design finalized** (decisions 1–5 locked; implementation pending go).
 See [Locked design decisions](#locked-design-decisions) at the bottom for the
 agreed contract. No code has been written yet.
 
@@ -137,29 +137,43 @@ completion. They do NOT generate one-method-per-field (7 131 fields would explod
 and they never gate unknown keys. Unknown/extension fields always flow through
 `custom()` / `package()` unchanged.
 
-**2 — Entry point (real code, no alias table).** `->bill(string $formId, array
-$initial = []): Entity` is the single source of truth. `__call` sugar
-`$api->SAL_SaleOrder($data)` resolves the **real `entity_code`** (no invented
-short alias, nothing to hand-maintain) via a generated registry of valid codes;
-an unknown code throws `ConfigException`. Entity codes never collide with the
-camelCase client methods.
+**2 — Entry point (typed classes win; no method-name magic).** Form-id-as-method-name
+(`$api->SAL_SaleOrder()`) is dropped: it can only run through `__call`, whose return
+type is `mixed`, so it defeats the editor completion we are building for. Three tiers,
+all `Entity`-typed where it matters:
+- **Typed, class-static (primary):** `SaleOrder::for($api, $initial = []): static` —
+  a base factory; `: static` makes `$order` resolve to `SaleOrder` in every IDE with
+  zero annotations.
+- **Typed, client-centric:** `$api->entity(SaleOrder::class, $initial = []): Entity`
+  documented `@template T of Entity / @param class-string<T> / @return T` → analyzers
+  infer `T`. Its body just calls `SaleOrder::for($this, $initial)` (B delegates to A).
+- **Generic / schema-free:** `$api->bill(string $formId, array $initial = []): Entity`
+  returns the base `Entity` (only base methods complete) for quick jobs or entities
+  with no class — always available, never gated.
 
-**3 — Terminals & metadata role (completion only, NO validation).**
+`::class` must appear **statically** (as an argument to `entity()`/`for()`), never as
+a dynamic method name.
+
+**3 — Terminals & metadata role (real classes for completion, NO validation).**
 - Model family terminates with **named methods**: `->save($patch = null)`,
-  `->draft(...)`, … returning the existing `K3Cloud\Result`.
-- Identifier / operation family (`submit / audit / unaudit / delete / view`,
-  payload shaped `{Numbers, Ids, CreateOrgId, InterationFlags…}`) stays a **raw
-  array** via the existing client methods — not the Model builder (different
-  payload family).
+  `->draft(...)`, … returning the existing `K3Cloud\Result` (via the injected client).
+- Identifier / operation family (`submit / audit / unaudit / delete / view`, payload
+  shaped `{Numbers, Ids, CreateOrgId, InterationFlags…}`) stays a **raw array** via the
+  existing client methods — not the Model builder (different payload family).
 - A generic `->call(string $op, ?array $patch = null): Result` escape hatch stays
   on the base for rare Model-family endpoints.
-- **No runtime validation and no runtime `withMetadata()`/injection.** Metadata is
-  used only to **generate editor-time completion**: `.phpstorm.meta.php` (+ field
-  constants) for Model field names AND for the non-Model op payload keys, so you
-  don't have to memorize them. Missing keys are simply not completed and never
-  error — completion is a convenience, not a contract. A user-supplied metadata
-  file is a **build-time, additive (叠加)** input to the generator (merge their
-  二开 fields over the default set → regenerate stubs); it is not loaded at runtime.
+- **No runtime validation and no runtime `withMetadata()`/injection.**
+- **Completion comes from real, editable registered classes — NOT a generated
+  `.phpstorm.meta.php`.** Devs write (or scaffold) a subclass per entity they use; it
+  is normal code, so completion is cross-IDE and works at runtime too. The raw-array
+  **op-payload keys** are hinted via typed `@param array{...}` docblocks we ship on the
+  client op methods (also static, portable, zero generation). Missing keys are simply
+  not completed and never error — completion is a convenience, not a contract.
+- `build-metadata.php` may **scaffold a starting user class + field-name constants**
+  (a build-time, additive/叠加 step: merge the tenant's 二开 fields over the default set,
+  emit a class the developer then owns/edits). The output is owned source, not a throwaway
+  stub. A user-supplied metadata file is an input to this generator only; it is never
+  loaded at runtime.
 
 **4 — Merge semantics.**
 - `line($segment, $row)` is the **only append path** (adds one row).
@@ -173,5 +187,19 @@ camelCase client methods.
   `Model` is a sub-key of it, and `$patch` merges at the payload level.
 - The `line()` closure receives a **fresh row sub-builder** (same
   `set/ref/custom` API) so extension fields work on lines too.
+
+**5 — Chain typing & (optional) registration.**
+- Every fluent method — base `set / ref / custom / line / package`, subclass helpers,
+  and the `for()` factory — is declared `: static`, so the concrete subclass type
+  survives the entire chain and reaches the terminal. Terminals (`save/draft/call`)
+  return `K3Cloud\Result`, not `static`.
+- Each `Entity` subclass declares its own `formId()` (const + method); there is no
+  central entity list to maintain.
+- **Registration is only a convenience for the string entry `bill($formId)`**, so it can
+  auto-resolve to a developer class when one exists: convention lookup (a configured
+  entity namespace, or a generated `formId => FQCN` map) and/or an explicit map on
+  `Config`/client. Absent a class it silently returns the base `Entity` — never an error.
+  The typed entry (`SaleOrder::for($api)` / `$api->entity(SaleOrder::class)`) does **not**
+  rely on registration at all, since the class is referenced directly.
 
 Implementation is deferred until an explicit go.
