@@ -7,10 +7,10 @@ namespace K3Cloud\Tests;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration test for `tools/build-metadata.php --scaffold`.
+ * 针对 `tools/build-metadata.php --scaffold` 的集成测试。
  *
- * Uses an inline fixture (no dependency on any local export), runs the generator
- * in a temp dir, and asserts the produced class + map. Cleans up its own temp dir.
+ * 使用内联 fixture（不依赖任何本地导出），在临时目录里运行生成器，断言生成的类与 map。
+ * 自行清理其临时目录。
  */
 final class ScaffoldTest extends TestCase
 {
@@ -71,7 +71,7 @@ final class ScaffoldTest extends TestCase
 
         self::assertFileExists($file);
 
-        // syntax-valid PHP
+        // 语法有效的 PHP
         exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1', $lint, $lintCode);
         self::assertSame(0, $lintCode, implode("\n", $lint));
 
@@ -81,9 +81,9 @@ final class ScaffoldTest extends TestCase
         self::assertStringContainsString("public const FORM_ID = 'TST_Thing';", $src);
         self::assertStringContainsString("public const FLD_FID = 'FID'", $src);
         self::assertStringContainsString("public const FLD_FBILLNO = 'FBillNo'", $src);
-        // 二开 constant present only because --with-custom
+        // 二开常量之所以存在，只是因为 --with-custom
         self::assertStringContainsString("public const FLD_F_ABC_EXT = 'F_ABC_ext'", $src);
-        // entry-segment helper for the non-head segment FDetail
+        // 非头部分段 FDetail 的分录 helper
         self::assertStringContainsString('function addFdetailLine(callable|array $row): static', $src);
         self::assertStringContainsString("\$this->line('FDetail', \$row)", $src);
 

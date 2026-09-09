@@ -16,10 +16,10 @@ final class EnvelopeTest extends TestCase
 
         self::assertArrayHasKey('parameters', $decoded);
         self::assertSame('BD_Currency', $decoded['parameters'][0]);
-        // The model is embedded as a nested object, not a double-encoded string.
+        // model 作为嵌套对象嵌入，而非被二次编码成字符串。
         self::assertIsArray($decoded['parameters'][1]);
         self::assertSame('人民币', $decoded['parameters'][1]['Model']['FNAME']);
-        // JSON_UNESCAPED_UNICODE: raw UTF-8, not \uXXXX escapes.
+        // JSON_UNESCAPED_UNICODE：输出原始 UTF-8，而非 \uXXXX 转义。
         self::assertStringContainsString('人民币', $json);
     }
 

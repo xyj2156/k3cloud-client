@@ -9,8 +9,7 @@ use K3Cloud\Http\HttpResponse;
 use K3Cloud\Http\Transport;
 
 /**
- * In-memory transport used by unit tests. It queues canned responses and
- * records every request it was asked to send.
+ * 单元测试使用的内存传输实现。它会排队预设的响应，并记录被要求发送的每个请求。
  */
 final class FakeTransport implements Transport
 {

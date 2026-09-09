@@ -15,7 +15,7 @@ final class SignerTest extends TestCase
         $data = 'some-payload';
         $key = 'secret';
 
-        // The gateway expects base64( hex(hmac_sha256) ), NOT base64 of raw bytes.
+        // 网关期望 base64( hex(hmac_sha256) )，而不是对原始字节做 base64。
         $expected = base64_encode(hash_hmac('sha256', $data, $key, false));
 
         self::assertSame($expected, Signer::hmacSha256Base64($data, $key));
@@ -24,7 +24,7 @@ final class SignerTest extends TestCase
     public function testGatewaySecretIsUnmaskedAndReencoded(): void
     {
         $mask = '0054f397c6234378b09ca7d3e5debce7';
-        $raw = 'abcdefgh';                       // pretend decoded secret bytes
+        $raw = 'abcdefgh';                       // 假装是解码后的密钥字节
         $encoded = base64_encode($raw);
 
         $actual = Signer::deriveGatewaySecret($encoded, $mask);
@@ -46,7 +46,7 @@ final class SignerTest extends TestCase
 
         self::assertStringStartsWith('%2F', $encoded);
         self::assertStringNotContainsString('/', $encoded);
-        // Dots and letters are left untouched by rawurlencode.
+        // rawurlencode 不改动点和字母。
         self::assertStringContainsString('Save.common.kdsvc', $encoded);
     }
 }

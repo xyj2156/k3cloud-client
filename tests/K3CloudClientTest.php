@@ -53,7 +53,7 @@ final class K3CloudClientTest extends TestCase
     }
 }
 
-/** Concrete subclass used to prove late-static-binding through the fluent chain. */
+/** 用于证明链式调用中后期静态绑定（late static binding）生效的具体子类。 */
 final class TestableClient extends K3CloudClient
 {
 }

@@ -26,7 +26,7 @@ final class SessionAuthTest extends TestCase
     public function testLoginIsLazyAndAttachesSessionCookie(): void
     {
         $transport = new FakeTransport();
-        // First send() is the ValidateUser login; queue its response.
+        // 第一个 send() 是 ValidateUser 登录；为其排队一个响应。
         $transport->queueResponse(200, '{"LoginResultType":1,"KDSVCSessionId":"abc"}', [
             'Set-Cookie' => ['kdsessionid=abc; path=/; HttpOnly'],
         ]);
@@ -77,12 +77,12 @@ final class SessionAuthTest extends TestCase
         $auth = new SessionAuth($this->config(), $login);
         $auth->decorate(new HttpRequest('POST', 'https://cloud.example.com/K3Cloud/x.common.kdsvc', '{}'));
 
-        // Same identity, only TLS differs (exactly what ->insecure() produces).
+        // 身份相同，仅 TLS 不同（正是 ->insecure() 产生的效果）。
         $rebuilt = $auth->withDependencies($this->config()->withTlsVerification(false), new FakeTransport());
 
         self::assertTrue($rebuilt->isLoggedIn(), 'live session must survive a non-identity reconfigure');
 
-        $quiet = new FakeTransport(); // if it logged in again, requests would be >0
+        $quiet = new FakeTransport(); // 若它又登录了一次，requests 会 >0
         $decorated = $rebuilt->decorate(new HttpRequest('POST', 'https://cloud.example.com/K3Cloud/y.common.kdsvc', '{}'));
         self::assertCount(0, $quiet->requests, 'rebase must NOT trigger a second login');
         self::assertSame(['kdsessionid' => 'abc'], $decorated->cookies());
@@ -113,7 +113,7 @@ final class SessionAuthTest extends TestCase
         self::assertInstanceOf(SignatureAuth::class, $rebuilt);
     }
 
-    /** A logged-in SessionAuth plus the FakeTransport that produced the login. */
+    /** 返回一个已登录的 SessionAuth，以及产生该登录的 FakeTransport。 */
     private function loggedInAuth(): SessionAuth
     {
         $transport = new FakeTransport();
@@ -127,7 +127,7 @@ final class SessionAuthTest extends TestCase
 
     public function testRealSessionLostPayloadTriggersRelogin(): void
     {
-        // Exact shape from production: HTTP 200 + IsSuccess=false + re-login message.
+        // 来自生产环境的真实形态：HTTP 200 + IsSuccess=false + 重新登录消息。
         $body = '{"Result":{"ResponseStatus":{"ErrorCode":500,"IsSuccess":false,'
             . '"Errors":[{"FieldName":null,"Message":"会话信息已丢失，请重新登录","DIndex":0}],'
             . '"SuccessEntitys":[],"SuccessMessages":[],"MsgCode":1}}}';
@@ -159,8 +159,8 @@ final class SessionAuthTest extends TestCase
 
     public function testSessionKeywordsInsideSuccessfulDataDoNotRelogin(): void
     {
-        // Message-scoped matching: these words appear in returned row data, not in
-        // an error envelope, so they must not be treated as a lost session.
+        // 按消息匹配：这些词出现在返回的行数据里，而非错误信封里，
+        // 因此不应被当作会话丢失。
         $auth = $this->loggedInAuth();
         $retry = $auth->shouldRetry(
             new HttpRequest('POST', 'u', '{}'),

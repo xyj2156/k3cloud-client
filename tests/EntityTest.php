@@ -10,9 +10,8 @@ use K3Cloud\K3CloudClient;
 use PHPUnit\Framework\TestCase;
 
 /**
- * A developer-authored entity subclass: this is what gives cross-IDE completion.
- * Only the fields/methods the developer actually uses are declared; unknown ones
- * still work through the inherited set()/custom()/package().
+ * 一个由开发者编写的实体子类：正是它带来跨 IDE 的补全。
+ * 只声明开发者真正用到的字段/方法；未知的字段仍通过继承来的 set()/custom()/package() 生效。
  */
 final class SaleOrder extends Entity
 {
@@ -87,13 +86,13 @@ final class EntityTest extends TestCase
             'FSaleOrderEntry'   => [['FQty' => '1']],
         ]);
 
-        // assoc deep-merge adds a sibling key
+        // 关联深合并会新增一个兄弟键
         $entity->package(['FSaleOrderFinance' => ['FExchangeRate' => '1']]);
         $model = $entity->toArray()['Model'];
         self::assertSame(['FNumber' => 'PRE001'], $model['FSaleOrderFinance']['FSettleCurrId']);
         self::assertSame('1', $model['FSaleOrderFinance']['FExchangeRate']);
 
-        // list value replaces, does not append
+        // 列表值整体替换，而非追加
         $entity->package(['FSaleOrderEntry' => [['FQty' => '9']]]);
         self::assertCount(1, $entity->toArray()['Model']['FSaleOrderEntry']);
         self::assertSame('9', $entity->toArray()['Model']['FSaleOrderEntry'][0]['FQty']);
