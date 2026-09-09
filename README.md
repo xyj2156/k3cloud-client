@@ -146,6 +146,54 @@ $result = $api->query('SAL_SaleOrder', ['FSBILLNO', 'FTOTALAMOUNT'], [
 ]);
 ```
 
+## Building a bill (fluent)
+
+Instead of hand-assembling the nested `Model`, build it. The base `Entity` is
+schema-free — any entity and any 二开 / extension field work without SDK support —
+and you can subclass it per entity for typed helpers and IDE completion.
+
+```php
+use K3Cloud\K3CloudClient;
+
+// Generic (no class needed) — returns the base Entity:
+$api->bill('SAL_SaleOrder')
+    ->ref('FBillTypeID', 'XSDD01_SYS', 'FNUMBER')   // base-data reference
+    ->ref('FCustId', '16.195.06.0001')
+    ->custom('F_PEYC_Decimal', '1710')              // 二开 field, no schema
+    ->line('FSaleOrderEntry', fn($row) => $row
+        ->ref('FMaterialId', '02.04.03.089')
+        ->set('FQty', '1.000'))
+    ->package(['FSaleOrderFinance' => ['FSettleCurrId' => ['FNumber' => 'PRE001']]])
+    ->save()                                        // -> Result
+    ->throwIfError();
+```
+
+Or with your own subclass (typed completion, `: static` keeps the concrete type):
+
+```php
+use K3Cloud\Entity;
+
+final class SaleOrder extends Entity
+{
+    public const FORM_ID = 'SAL_SaleOrder';
+    public function customer(string $n): static { return $this->ref('FCustId', $n); }
+}
+
+$order = $api->entity(SaleOrder::class);   // typed: $order is SaleOrder
+// or class-static: $order = SaleOrder::for($api);
+$order->customer('16.195.06.0001')->save();
+
+// register so the string entry auto-resolves too (optional convenience):
+Entity::register(SaleOrder::FORM_ID, SaleOrder::class);
+$api->bill('SAL_SaleOrder');               // → SaleOrder
+```
+
+Mutators: `set/ref/custom` overwrite a field; `line()` is the only append path;
+`package()`/terminal `$patch` deep-merge the Model (list values replace);
+`control()`/`mergePayload()` handle top-level flags; `save()/draft()/call()` are
+the terminals returning `Result`. Design rationale lives in
+[`docs/design-bill-builder.md`](docs/design-bill-builder.md).
+
 ## Configuration notes
 
 - **`serverUrl`** — the WebAPI root, e.g. `https://host:port/K3Cloud` (private)
@@ -183,11 +231,12 @@ Only the cleaned artifacts (`kingdee_field.standard.json`,
 
 ## Roadmap
 
-- **Fluent Bill builder** — remove the hand-written nested `Model` boilerplate.
-  The design (including the 二开 escape hatch that lets any custom field / segment /
-  pre-built package be attached without schema support, and metadata used only for
-  editor completion, never validation) is finalized in
-  [`docs/design-bill-builder.md`](docs/design-bill-builder.md). Implementation pending.
+- **Fluent Bill builder** — *runtime shipped* (`Entity`/`Line`, `->bill()/->entity()`,
+  typed subclasses, named terminals, `->call()`, merge semantics, identifier-op
+  `@param` completion). Design in
+  [`docs/design-bill-builder.md`](docs/design-bill-builder.md).
+- **Planned:** `build-metadata.php` scaffold mode — generate a starting per-entity
+  class + field-name constants from (optionally user-supplied, additive) metadata.
 
 ## License
 
