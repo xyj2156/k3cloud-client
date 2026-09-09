@@ -184,9 +184,10 @@ Only the cleaned artifacts (`kingdee_field.standard.json`,
 ## Roadmap
 
 - **Fluent Bill builder** — remove the hand-written nested `Model` boilerplate.
-  Design (including the 二开 escape hatch that lets any custom field / segment /
-  pre-built package be attached without schema support) is specified in
-  [`docs/design-bill-builder.md`](docs/design-bill-builder.md). Not yet implemented.
+  The design (including the 二开 escape hatch that lets any custom field / segment /
+  pre-built package be attached without schema support, and metadata used only for
+  editor completion, never validation) is finalized in
+  [`docs/design-bill-builder.md`](docs/design-bill-builder.md). Implementation pending.
 
 ## License
 

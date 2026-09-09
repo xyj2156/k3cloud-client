@@ -1,7 +1,8 @@
 # Design: a fluent Bill builder (二开-safe)
 
-Status: **proposed** (design only — not yet implemented). This document locks the
-intended API before any code is written.
+Status: **design finalized** (decisions 1–4 locked; implementation pending go).
+See [Locked design decisions](#locked-design-decisions) at the bottom for the
+agreed contract. No code has been written yet.
 
 ## Problem
 
@@ -122,10 +123,55 @@ metadata loaded, unknown keys pass through unchanged.
 - Cross-segment dependency validation.
 - Any runtime call to the server for schema (kept purely local from the export).
 
-## Open decisions for implementation time
+## Locked design decisions
 
-1. Class name: `Bill` vs `Model` vs `Document` (avoid clash with `K3Cloud\Result` style).
-2. Whether `save()/draft()/submit()` overloads accept a `Bill` (likely yes) —
-   the current methods already take `array|string`, so a `Bill` just needs to be
-   `Stringable`/`toArray()`-resolved or a small union widened.
-3. `lines()` reuse: does the closure receive a fresh sub-builder or an array.
+Agreed 2026-09-09. These override any earlier "open" wording above.
+
+**1 — Base-class strategy (schema-free).** The base builder class is named
+`Entity` and is fully generic: `set / ref / custom / line / package` all live on
+it, so a bare `Entity` (or the `->bill()` factory) can build **any** form — all
+50 now, and any future entity or 二开 field — with zero schema. Generated
+per-entity subclasses are **optional sugar only**: they add segment accessors
+(e.g. `entryLine()` → `FSaleOrderEntry`) and **field-name constants** for IDE
+completion. They do NOT generate one-method-per-field (7 131 fields would explode)
+and they never gate unknown keys. Unknown/extension fields always flow through
+`custom()` / `package()` unchanged.
+
+**2 — Entry point (real code, no alias table).** `->bill(string $formId, array
+$initial = []): Entity` is the single source of truth. `__call` sugar
+`$api->SAL_SaleOrder($data)` resolves the **real `entity_code`** (no invented
+short alias, nothing to hand-maintain) via a generated registry of valid codes;
+an unknown code throws `ConfigException`. Entity codes never collide with the
+camelCase client methods.
+
+**3 — Terminals & metadata role (completion only, NO validation).**
+- Model family terminates with **named methods**: `->save($patch = null)`,
+  `->draft(...)`, … returning the existing `K3Cloud\Result`.
+- Identifier / operation family (`submit / audit / unaudit / delete / view`,
+  payload shaped `{Numbers, Ids, CreateOrgId, InterationFlags…}`) stays a **raw
+  array** via the existing client methods — not the Model builder (different
+  payload family).
+- A generic `->call(string $op, ?array $patch = null): Result` escape hatch stays
+  on the base for rare Model-family endpoints.
+- **No runtime validation and no runtime `withMetadata()`/injection.** Metadata is
+  used only to **generate editor-time completion**: `.phpstorm.meta.php` (+ field
+  constants) for Model field names AND for the non-Model op payload keys, so you
+  don't have to memorize them. Missing keys are simply not completed and never
+  error — completion is a convenience, not a contract. A user-supplied metadata
+  file is a **build-time, additive (叠加)** input to the generator (merge their
+  二开 fields over the default set → regenerate stubs); it is not loaded at runtime.
+
+**4 — Merge semantics.**
+- `line($segment, $row)` is the **only append path** (adds one row).
+- `set / ref / custom($key,…)` = overwrite that key (later wins).
+- `package(array)` and the terminal `$patch` = recursive merge: associative
+  arrays deep-merged, scalars & reference objects overwritten, but **list /
+  entry-array values are replaced, never appended** (avoids accidental duplicate
+  lines on the non-idempotent Save).
+- The builder models the **whole Save data payload** (top-level control flags such
+  as `NeedUpDateFields`, `IsVerifyBaseDataField` get their own named setters);
+  `Model` is a sub-key of it, and `$patch` merges at the payload level.
+- The `line()` closure receives a **fresh row sub-builder** (same
+  `set/ref/custom` API) so extension fields work on lines too.
+
+Implementation is deferred until an explicit go.
