@@ -171,6 +171,23 @@ composer test        # runs PHPUnit
 
 Examples live in `examples/` and can be run after filling in credentials.
 
+To (re)build the cleaned entity/field reference used by the metadata layer, drop
+a fresh K/3 Cloud export somewhere git-ignored (e.g. `.docs/raw/`) and run:
+
+```bash
+php tools/build-metadata.php [.docs/raw/entity.json] [.docs/raw/field.json] [.docs]
+```
+
+Only the cleaned artifacts (`kingdee_field.standard.json`,
+`kingdee_field.custom.json`, the report) are tracked; the raw export never is.
+
+## Roadmap
+
+- **Fluent Bill builder** — remove the hand-written nested `Model` boilerplate.
+  Design (including the 二开 escape hatch that lets any custom field / segment /
+  pre-built package be attached without schema support) is specified in
+  [`docs/design-bill-builder.md`](docs/design-bill-builder.md). Not yet implemented.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
