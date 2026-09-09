@@ -105,6 +105,44 @@ class K3CloudClient
     }
 
     /* ---------------------------------------------------------------------
+     |  Entity / bill builders
+     * ------------------------------------------------------------------- */
+
+    /**
+     * Start building a form payload by its entity code (schema-free).
+     *
+     * Returns a developer-registered Entity subclass when one exists for the
+     * form id (see {@see Entity::register()}), otherwise the generic base
+     * {@see Entity}. Never fails on an unknown id — the base accepts any field.
+     *
+     * @param array<string,mixed> $initial full data payload, or a bare Model dict
+     */
+    public function bill(string $formId, array $initial = []): Entity
+    {
+        $class = Entity::resolve($formId);
+
+        return $class !== null
+            ? $class::for($this, $initial)
+            : new Entity($this, $formId, $initial);
+    }
+
+    /**
+     * Start building with a typed entity class, so the returned value is the
+     * concrete subclass (PHPStan / Intelephense resolve T from the ::class arg).
+     *
+     * @template T of Entity
+     *
+     * @param class-string<T>     $class
+     * @param array<string,mixed> $initial
+     *
+     * @return T
+     */
+    public function entity(string $class, array $initial = []): Entity
+    {
+        return $class::for($this, $initial);
+    }
+
+    /* ---------------------------------------------------------------------
      |  Fluent options — identical for both auth modes.
      |  Each returns a new, same-class client built from an updated immutable
      |  Config. The transport is rebuilt so the new setting takes effect, and the
@@ -241,29 +279,52 @@ class K3CloudClient
         return $this->operation('Draft', [$formId, $model]);
     }
 
+    /**
+     * Read a record. $data keys: Number / Id / EntryIds / InterationFlags.
+     *
+     * @param array{Number?:string,Id?:string,EntryIds?:string,InterationFlags?:string}|string $data
+     */
     public function view(string $formId, array|string $data): Result
     {
         return $this->operation('View', [$formId, $data]);
     }
 
     /**
-     * @param array<mixed>|string $data e.g. ["Numbers"=>["..."], "Ids"=>"", "CreateOrgId"=>0]
+     * Submit (提交). Identifier-family payload — not a Model. Common keys shown
+     * so the editor can complete them; unknown keys still pass through untouched.
+     *
+     * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string,UseBatControlTransform?:bool|string}|string $data
      */
     public function submit(string $formId, array|string $data): Result
     {
         return $this->operation('Submit', [$formId, $data]);
     }
 
+    /**
+     * Audit (审核).
+     *
+     * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string,UseBatControlTransform?:bool|string}|string $data
+     */
     public function audit(string $formId, array|string $data): Result
     {
         return $this->operation('Audit', [$formId, $data]);
     }
 
+    /**
+     * Un-audit (反审核).
+     *
+     * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string,NetworkControl?:bool|string}|string $data
+     */
     public function unaudit(string $formId, array|string $data): Result
     {
         return $this->operation('UnAudit', [$formId, $data]);
     }
 
+    /**
+     * Delete (删除).
+     *
+     * @param array{Numbers?:list<string>,Ids?:string,CreateOrgId?:int,InterationFlags?:string,IgnoreInterationFlag?:bool|string}|string $data
+     */
     public function delete(string $formId, array|string $data): Result
     {
         return $this->operation('Delete', [$formId, $data]);
