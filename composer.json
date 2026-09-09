@@ -1,0 +1,43 @@
+{
+    "name": "xyj2156/k3cloud-client",
+    "description": "Unofficial, independently-written PHP client for the Kingdee Cloud (K/3 Cloud) WebAPI. Supports both third-party app signature auth (X-Kd / X-Api HMAC) and classic username/password session login.",
+    "type": "library",
+    "keywords": [
+        "kingdee",
+        "k3cloud",
+        "k3 cloud",
+        "webapi",
+        "erp",
+        "sdk",
+        "client"
+    ],
+    "license": "MIT",
+    "readme": "README.md",
+    "require": {
+        "php": ">=8.1",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 || ^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "K3Cloud\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "K3Cloud\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
