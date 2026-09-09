@@ -1,0 +1,252 @@
+[
+    {
+        "entity_code": "SAL_OUTSTOCK",
+        "entity_name": "销售出库单",
+        "module": "供应链应链>销售管理>出货处理"
+    },
+    {
+        "entity_code": "SAL_RETURNSTOCK",
+        "entity_name": "销售退货单",
+        "module": ""
+    },
+    {
+        "entity_code": "GL_VOUCHER",
+        "entity_name": "总账凭证",
+        "module": ""
+    },
+    {
+        "entity_code": "AR_RECEIVEBILL",
+        "entity_name": "收款单",
+        "module": "财务会计>出纳管理>日常处理"
+    },
+    {
+        "entity_code": "AR_REFUNDBILL",
+        "entity_name": "收款退款单",
+        "module": "财务会计>出纳管理>日常处理"
+    },
+    {
+        "entity_code": "AR_OTHERRECABLE",
+        "entity_name": "其他应收单",
+        "module": "财务会计>应收款管理>其他应收"
+    },
+    {
+        "entity_code": "AR_RECEIVABLE",
+        "entity_name": "应收单列表",
+        "module": "财务会计>应收款管理>销售应收"
+    },
+    {
+        "entity_code": "AR_Match",
+        "entity_name": "应收核销单",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_CUSTOMER",
+        "entity_name": "客户列表",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_Empinfo",
+        "entity_name": "员工列表",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_Department",
+        "entity_name": "部门列表",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_NEWSTAFF",
+        "entity_name": "员工任岗列表",
+        "module": null
+    },
+    {
+        "entity_code": "BD_Supplier",
+        "entity_name": "供应商列表",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_MATERIAL",
+        "entity_name": "物料",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_InStock",
+        "entity_name": "采购入库单",
+        "module": ""
+    },
+    {
+        "entity_code": "PUR_MRB",
+        "entity_name": "采购退料单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_INVENTORY",
+        "entity_name": "即时库存",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_MISCELLANEOUS",
+        "entity_name": "其他入库单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_MISDELIVERY",
+        "entity_name": "其他出库单",
+        "module": ""
+    },
+    {
+        "entity_code": "PRD_FEEDMTRL",
+        "entity_name": "生产补料单",
+        "module": ""
+    },
+    {
+        "entity_code": "PRD_INSTOCK",
+        "entity_name": "生产入库单",
+        "module": ""
+    },
+    {
+        "entity_code": "PRD_PICKMTRL",
+        "entity_name": "生产领料单",
+        "module": ""
+    },
+    {
+        "entity_code": "PRD_RETURNMTRL",
+        "entity_name": "生产退料单",
+        "module": ""
+    },
+    {
+        "entity_code": "SP_INSTOCK",
+        "entity_name": "简单生产入库单",
+        "module": ""
+    },
+    {
+        "entity_code": "SP_OUTSTOCK",
+        "entity_name": "简单生产退库单",
+        "module": ""
+    },
+    {
+        "entity_code": "SP_PICKMTRL",
+        "entity_name": "简单生产领料单",
+        "module": ""
+    },
+    {
+        "entity_code": "SP_RETURNMTRL",
+        "entity_name": "简单生产退料单",
+        "module": ""
+    },
+    {
+        "entity_code": "BD_Account",
+        "entity_name": "科目列表",
+        "module": ""
+    },
+    {
+        "entity_code": "SAL_SaleOrder",
+        "entity_name": "销售订单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_StockCountGain",
+        "entity_name": "盘盈单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_StockCountLoss",
+        "entity_name": "盘亏单",
+        "module": ""
+    },
+    {
+        "entity_code": "SUB_FEEDMTRL",
+        "entity_name": "委外补料单",
+        "module": ""
+    },
+    {
+        "entity_code": "SUB_PickMtrl",
+        "entity_name": "委外领料单",
+        "module": ""
+    },
+    {
+        "entity_code": "SUB_RETURNMTRL",
+        "entity_name": "委外退料单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_OEMInStock",
+        "entity_name": "受托加工材料入库单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_InvInit",
+        "entity_name": "初始库存",
+        "module": null
+    },
+    {
+        "entity_code": "REM_INSTOCK",
+        "entity_name": "生产线产品入库单",
+        "module": ""
+    },
+    {
+        "entity_code": "REM_ReturnMtrl",
+        "entity_name": "生产线退料单",
+        "module": ""
+    },
+    {
+        "entity_code": "PRD_RetStock",
+        "entity_name": "生产退库单",
+        "module": null
+    },
+    {
+        "entity_code": "SUB_EXCONSUME",
+        "entity_name": "委外超耗单",
+        "module": null
+    },
+    {
+        "entity_code": "REM_OUTSTOCK",
+        "entity_name": "生产线产品退库单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_OEMInStockRETURN",
+        "entity_name": "受托加工材料退料单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_TransferDirect",
+        "entity_name": "直接调拨单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_TRANSFEROUT",
+        "entity_name": "分步式调出单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_TRANSFERIN",
+        "entity_name": "分步式调入单",
+        "module": null
+    },
+    {
+        "entity_code": "REM_TransferDirect",
+        "entity_name": "生产线仓库调拨单",
+        "module": ""
+    },
+    {
+        "entity_code": "STK_StatusConvert",
+        "entity_name": "形态转换单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_StockConvert",
+        "entity_name": "库存状态转换",
+        "module": null
+    },
+    {
+        "entity_code": "STK_LOTADJUST",
+        "entity_name": "批号调整单",
+        "module": null
+    },
+    {
+        "entity_code": "STK_AssembledApp",
+        "entity_name": "组装拆卸单",
+        "module": null
+    }
+]

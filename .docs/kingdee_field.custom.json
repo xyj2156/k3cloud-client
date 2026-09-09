@@ -1,0 +1,481 @@
+[
+    {
+        "entity_id": 7,
+        "entity_code": "AR_RECEIVABLE",
+        "entity_name": "应收单列表",
+        "module": "财务会计>应收款管理>销售应收",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "单据头",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Jxjzrq",
+                        "title": "计息截止日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_jxfs",
+                        "title": "计息方式",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_lixi",
+                        "title": "利息",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "FEntityDetail",
+                "name": "明细",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Discount",
+                        "title": "实际折扣额",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 4,
+        "entity_code": "AR_RECEIVEBILL",
+        "entity_name": "收款单",
+        "module": "财务会计>出纳管理>日常处理",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "单据头",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Amount",
+                        "title": "政策关联金额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_BaseProperty",
+                        "title": "客户联系人",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Jxjzrq",
+                        "title": "计息截止日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_cust",
+                        "title": "客户",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_jxfs",
+                        "title": "计息方式",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_lixi",
+                        "title": "利息",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 9,
+        "entity_code": "BD_CUSTOMER",
+        "entity_name": "客户列表",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "基本信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_LXR",
+                        "title": "客户联系人",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 14,
+        "entity_code": "BD_MATERIAL",
+        "entity_name": "物料",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "物料",
+                "fields": [
+                    {
+                        "key": "F_PDQP_Base",
+                        "title": "归属组织",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PEYC_Combo",
+                        "title": "是否战略产品",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "SubHeadEntity2",
+                "name": "销售",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Assistant",
+                        "title": "产品销售分组",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 1,
+        "entity_code": "SAL_OUTSTOCK",
+        "entity_name": "销售出库单",
+        "module": "供应链应链>销售管理>出货处理",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "基本信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Jxjzrq",
+                        "title": "计息截止日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_jxfs",
+                        "title": "计息方式",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_lixi",
+                        "title": "利息",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PDQP_Datetime",
+                        "title": "时间",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PDQP_PrintTimes",
+                        "title": "打印次数",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "FEntity",
+                "name": "明细信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Discount",
+                        "title": "实际折扣额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PEYC_Decimal",
+                        "title": "结算单价",
+                        "length": ""
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 2,
+        "entity_code": "SAL_RETURNSTOCK",
+        "entity_name": "销售退货单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FEntity",
+                "name": "明细信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Discount",
+                        "title": "实际折扣额",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 29,
+        "entity_code": "SAL_SaleOrder",
+        "entity_name": "销售订单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "基本信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Amount",
+                        "title": "政策余额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Amount1",
+                        "title": "本单可用余额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Base",
+                        "title": "销售政策收款",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_BaseProperty",
+                        "title": "政策类型",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_BaseProperty2",
+                        "title": "计息截止日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Date",
+                        "title": "政策日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Jxjzrq",
+                        "title": "计息截止日期",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_jxfs",
+                        "title": "计息方式",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_lixi",
+                        "title": "利息",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "FSaleOrderEntry",
+                "name": "订单明细",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_CheckBox",
+                        "title": "按单价扣减",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Discount",
+                        "title": "实际折扣额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Price",
+                        "title": "价目单价",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PEYC_Decimal",
+                        "title": "结算单价",
+                        "length": ""
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 26,
+        "entity_code": "SP_PICKMTRL",
+        "entity_name": "简单生产领料单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "单据头",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_BZ",
+                        "title": "班组",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "FEntity",
+                "name": "明细",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Amount",
+                        "title": "指定金额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_BaseProperty",
+                        "title": "生产对象规格",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Price",
+                        "title": "指定单价",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PEYC_BaseProperty",
+                        "title": "生产对象编码",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 27,
+        "entity_code": "SP_RETURNMTRL",
+        "entity_name": "简单生产退料单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "单据头",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_BZ",
+                        "title": "班组",
+                        "length": "255"
+                    }
+                ]
+            },
+            {
+                "code": "FEntity",
+                "name": "明细",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Amount",
+                        "title": "指定金额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Price",
+                        "title": "指定单价",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 15,
+        "entity_code": "STK_InStock",
+        "entity_name": "采购入库单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "基本信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_BWLGS",
+                        "title": "物流公司",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_DWLFY",
+                        "title": "物流费用",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_PrintTimes",
+                        "title": "打印次数",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 18,
+        "entity_code": "STK_MISCELLANEOUS",
+        "entity_name": "其他入库单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FEntity",
+                "name": "明细信息",
+                "fields": [
+                    {
+                        "key": "F_PAEZ_Amount",
+                        "title": "加工费",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Amount1",
+                        "title": "材料费",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Amount2",
+                        "title": "税额",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Amount3",
+                        "title": "价税合计",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Base",
+                        "title": "费用项目",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Decimal1",
+                        "title": "税率",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Price",
+                        "title": "加工单价",
+                        "length": "255"
+                    },
+                    {
+                        "key": "F_PAEZ_Price1",
+                        "title": "加工含税单价",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "entity_id": 43,
+        "entity_code": "STK_TransferDirect",
+        "entity_name": "直接调拨单",
+        "module": "",
+        "segments": [
+            {
+                "code": "FBillHead",
+                "name": "基本信息",
+                "fields": [
+                    {
+                        "key": "F_PDQP_PrintTimes",
+                        "title": "打印次数",
+                        "length": "255"
+                    }
+                ]
+            }
+        ]
+    }
+]
