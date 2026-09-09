@@ -79,26 +79,79 @@ class SessionAuth implements AuthStrategy
 
     public function shouldRetry(HttpRequest $request, HttpResponse $response): bool
     {
-        if (!$this->loggedIn) {
+        if (!$this->loggedIn || !$this->sessionExpired($response)) {
             return false;
         }
 
-        $invalid = in_array($response->status, [401, 403], true);
+        $this->invalidate();
 
-        if (!$invalid) {
-            foreach (self::EXPIRY_MARKERS as $marker) {
-                if ($marker !== '' && str_contains($response->body, $marker)) {
-                    $invalid = true;
-                    break;
+        return true;
+    }
+
+    /**
+     * Decide whether a response means "the session is gone" and therefore a
+     * single re-login + replay is worthwhile.
+     *
+     * We match on the extracted error *message text* rather than the whole body
+     * (a successful response may legitimately contain these words inside user
+     * data). A session-lost save, for example, comes back as HTTP 200 with
+     * IsSuccess=false and Errors[].Message = "会话信息已丢失，请重新登录".
+     */
+    private function sessionExpired(HttpResponse $response): bool
+    {
+        if ($response->status === 401 || $response->status === 403) {
+            return true;
+        }
+
+        foreach (self::errorMessages($response->body) as $message) {
+            foreach (self::EXPIRY_MESSAGE_PATTERNS as $pattern) {
+                if (preg_match($pattern, $message) === 1) {
+                    return true;
                 }
             }
         }
 
-        if ($invalid) {
-            $this->invalidate();
+        return false;
+    }
+
+    /**
+     * Collect human-readable error text from a K/3 Cloud response body.
+     *
+     * @return list<string> empty for a well-formed successful JSON body
+     */
+    private static function errorMessages(string $body): array
+    {
+        $json = json_decode($body, true);
+
+        // Non-JSON (e.g. a plain-text gateway error): fall back to the raw body.
+        if (!is_array($json)) {
+            return [$body];
         }
 
-        return $invalid;
+        $messages = [];
+
+        $status = $json['Result']['ResponseStatus'] ?? null;
+        if (is_array($status)) {
+            foreach ($status['Errors'] ?? [] as $error) {
+                if (is_array($error) && isset($error['Message'])) {
+                    $messages[] = (string) $error['Message'];
+                }
+            }
+            foreach (['Message', 'Result'] as $key) {
+                if (is_string($status[$key] ?? null)) {
+                    $messages[] = $status[$key];
+                }
+            }
+        }
+
+        // Some builds return the error as a bare string in Result, or at top level.
+        foreach (['Message', 'description', 'Result'] as $key) {
+            if (is_string($json[$key] ?? null)) {
+                $messages[] = $json[$key];
+            }
+        }
+
+        return $messages;
     }
 
     /**
@@ -188,15 +241,17 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * Substrings that, when present in a response body, indicate the session is
-     * no longer valid. Extend cautiously to avoid false-positive retries.
+     * PCRE patterns (UTF-8) matched against the extracted error message text to
+     * detect a lost/expired session. Covers the phrasings K/3 Cloud actually
+     * returns, e.g. "会话信息已丢失，请重新登录". Intentionally message-scoped so
+     * ordinary data never trips it.
      */
-    private const EXPIRY_MARKERS = [
-        '会话超时',
-        '会话已失效',
-        '会话已过期',
-        '登录已失效',
-        '未登录',
-        'kdsessionid',
+    private const EXPIRY_MESSAGE_PATTERNS = [
+        '/会话信息已丢失/u',
+        '/会话.{0,6}(失效|过期|超时|丢失|异常|不存在)/u',
+        '/(请)?重新登录/u',
+        '/未登录/u',
+        '/登录.{0,6}(失效|过期|异常|超时)/u',
+        '/session.{0,12}(expired|invalid|lost)/i',
     ];
 }

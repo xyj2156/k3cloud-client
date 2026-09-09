@@ -112,4 +112,62 @@ final class SessionAuthTest extends TestCase
         );
         self::assertInstanceOf(SignatureAuth::class, $rebuilt);
     }
+
+    /** A logged-in SessionAuth plus the FakeTransport that produced the login. */
+    private function loggedInAuth(): SessionAuth
+    {
+        $transport = new FakeTransport();
+        $transport->queueResponse(200, '{"LoginResultType":1,"KDSVCSessionId":"abc"}', [
+            'Set-Cookie' => ['kdsessionid=abc; path=/'],
+        ]);
+        $auth = new SessionAuth($this->config(), $transport);
+        $auth->decorate(new HttpRequest('POST', 'https://cloud.example.com/K3Cloud/x.common.kdsvc', '{}'));
+        return $auth;
+    }
+
+    public function testRealSessionLostPayloadTriggersRelogin(): void
+    {
+        // Exact shape from production: HTTP 200 + IsSuccess=false + re-login message.
+        $body = '{"Result":{"ResponseStatus":{"ErrorCode":500,"IsSuccess":false,'
+            . '"Errors":[{"FieldName":null,"Message":"会话信息已丢失，请重新登录","DIndex":0}],'
+            . '"SuccessEntitys":[],"SuccessMessages":[],"MsgCode":1}}}';
+
+        $auth = $this->loggedInAuth();
+        $retry = $auth->shouldRetry(
+            new HttpRequest('POST', 'u', '{}'),
+            new \K3Cloud\Http\HttpResponse(200, $body)
+        );
+
+        self::assertTrue($retry, 'the real session-lost message must trigger a re-login/replay');
+        self::assertFalse($auth->isLoggedIn(), 'session dropped so the replay re-authenticates');
+    }
+
+    public function testOrdinaryBusinessErrorDoesNotRelogin(): void
+    {
+        $body = '{"Result":{"ResponseStatus":{"IsSuccess":false,'
+            . '"Errors":[{"FieldName":"FNUMBER","Message":"编码已存在，请检查","DIndex":0}]}}}';
+
+        $auth = $this->loggedInAuth();
+        $retry = $auth->shouldRetry(
+            new HttpRequest('POST', 'u', '{}'),
+            new \K3Cloud\Http\HttpResponse(200, $body)
+        );
+
+        self::assertFalse($retry, 'a validation error is not a session problem');
+        self::assertTrue($auth->isLoggedIn(), 'stays logged in');
+    }
+
+    public function testSessionKeywordsInsideSuccessfulDataDoNotRelogin(): void
+    {
+        // Message-scoped matching: these words appear in returned row data, not in
+        // an error envelope, so they must not be treated as a lost session.
+        $auth = $this->loggedInAuth();
+        $retry = $auth->shouldRetry(
+            new HttpRequest('POST', 'u', '{}'),
+            new \K3Cloud\Http\HttpResponse(200, '[["未登录","会话信息已丢失"]]')
+        );
+
+        self::assertFalse($retry, 'session words inside returned data must not force a re-login');
+        self::assertTrue($auth->isLoggedIn());
+    }
 }
