@@ -93,19 +93,34 @@ final class Config
 
     public function withTimeouts(int $connectTimeout, int $requestTimeout): self
     {
-        return new self(
-            $this->serverUrl, $this->acctId, $this->userName, $this->authMode,
-            $this->password, $this->appId, $this->appSecret, $this->lcid, $this->orgNum,
-            $connectTimeout, $requestTimeout, $this->verifyTls,
-        );
+        return $this->copy(connectTimeout: $connectTimeout, requestTimeout: $requestTimeout);
+    }
+
+    /**
+     * Turn TLS certificate verification on (default) or off. Only disable it for
+     * trusted private / on-premise installs that use self-signed certificates.
+     */
+    public function withTlsVerification(bool $verify): self
+    {
+        return $this->copy(verifyTls: $verify);
     }
 
     public function withoutTlsVerification(): self
     {
+        return $this->withTlsVerification(false);
+    }
+
+    /**
+     * Build an updated immutable copy, reusing the current values for anything unset.
+     */
+    private function copy(?int $connectTimeout = null, ?int $requestTimeout = null, ?bool $verifyTls = null): self
+    {
         return new self(
             $this->serverUrl, $this->acctId, $this->userName, $this->authMode,
             $this->password, $this->appId, $this->appSecret, $this->lcid, $this->orgNum,
-            $this->connectTimeout, $this->requestTimeout, false,
+            $connectTimeout ?? $this->connectTimeout,
+            $requestTimeout ?? $this->requestTimeout,
+            $verifyTls ?? $this->verifyTls,
         );
     }
 

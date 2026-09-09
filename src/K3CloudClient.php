@@ -17,10 +17,11 @@ use K3Cloud\Support\Envelope;
  * High-level client for the K/3 Cloud WebAPI.
  *
  * Create it with one of the named constructors and call an operation; auth and
- * (for password mode) login are handled for you:
+ * (for password mode) login are handled for you. Both modes share the same
+ * fluent options (->insecure(), ->withTimeouts(), ->secure()):
  *
  *   $api = K3CloudClient::appSignature($url, $acctId, $user, $appId, $appSecret);
- *   $api = K3CloudClient::password($url, $acctId, $user, $password);
+ *   $api = K3CloudClient::password($url, $acctId, $user, $password)->insecure();
  *
  *   $res  = $api->save('BD_Currency', ['NeedUpDateFields' => [], 'Model' => [...]]);
  *   $rows = $api->query('BD_Currency', ['FCURRENCYID','FNUMBER'])->rows();
@@ -92,6 +93,40 @@ class K3CloudClient
     public function config(): Config
     {
         return $this->config;
+    }
+
+    /* ---------------------------------------------------------------------
+     |  Fluent options — identical for both auth modes.
+     |  Each returns a new, same-class client built from an updated immutable
+     |  Config (so the transport / auth are rebuilt consistently). Because a
+     |  fresh SessionAuth starts logged out, calling these mid-stream will
+     |  simply trigger one transparent re-login on the next request.
+     * ------------------------------------------------------------------- */
+
+    /** Trust any TLS certificate (self-signed / on-premise installs). */
+    public function insecure(): static
+    {
+        return $this->withConfig($this->config->withTlsVerification(false));
+    }
+
+    /** Enforce TLS certificate verification (the default). */
+    public function secure(): static
+    {
+        return $this->withConfig($this->config->withTlsVerification(true));
+    }
+
+    /**
+     * Set connect / request timeouts (seconds).
+     */
+    public function withTimeouts(int $connectTimeout, int $requestTimeout): static
+    {
+        return $this->withConfig($this->config->withTimeouts($connectTimeout, $requestTimeout));
+    }
+
+    /** Rebuild a client of the same class from a new immutable config. */
+    protected function withConfig(Config $config): static
+    {
+        return new static($config);
     }
 
     /* ---------------------------------------------------------------------
