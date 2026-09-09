@@ -17,3 +17,7 @@
 /.docs/kingdee_field.json
 /.docs/kingdee_entity.json
 
+# Generated class scaffold is a dev starting point to copy into their own project,
+# not something the package ships or tracks.
+/.docs/scaffold/
+

@@ -10,8 +10,17 @@ declare(strict_types=1);
  * secondary-development ("二开") custom fields from standard platform fields.
  *
  * Usage:
- *   php tools/build-metadata.php [entity.json] [field.json] [outDir]
- * Defaults point at the known export location and write to .docs/ next to this repo.
+ *   php tools/build-metadata.php [entity.json] [field.json] [outDir] [--scaffold] [options]
+ *
+ * Positionals default to the known export location + .docs/. With --scaffold it
+ * ALSO emits a starting per-entity PHP class (FORM_ID + field-name constants +
+ * entry-line helpers) into a git-ignored scaffold dir — a template for developers
+ * to copy/edit into their own project. Nothing generated here is a whitelist.
+ *
+ * Options (with --scaffold):
+ *   --namespace=App\K3Cloud\Entities   class namespace for generated files
+ *   --scaffold-out=<dir>               output dir (default <outDir>/scaffold)
+ *   --with-custom                      also emit 二开 fields as constants
  *
  * Classification rule (deliberately narrow to avoid false positives):
  *   a field is treated as CUSTOM when kingdee_name matches  ^F_[A-Za-z0-9]{2,4}_
@@ -21,9 +30,25 @@ declare(strict_types=1);
  * and are kept.
  */
 
-$inEntity = $argv[1] ?? 'E:/Dev/rebuild/.docs/kingdee_entity.json';
-$inField  = $argv[2] ?? 'E:/Dev/rebuild/.docs/kingdee_field.json';
-$outDir   = $argv[3] ?? dirname(__DIR__) . '/.docs';
+$positional = [];
+$flags = [];
+foreach (array_slice($argv, 1) as $arg) {
+    if (str_starts_with($arg, '--')) {
+        [$k, $v] = array_pad(explode('=', substr($arg, 2), 2), 2, null);
+        $flags[$k] = $v ?? true;
+    } else {
+        $positional[] = $arg;
+    }
+}
+
+$inEntity = $positional[0] ?? 'E:/Dev/rebuild/.docs/kingdee_entity.json';
+$inField  = $positional[1] ?? 'E:/Dev/rebuild/.docs/kingdee_field.json';
+$outDir   = $positional[2] ?? dirname(__DIR__) . '/.docs';
+
+$scaffold     = isset($flags['scaffold']);
+$scaffoldNs   = (string) ($flags['namespace'] ?? 'App\\K3Cloud\\Entities');
+$scaffoldOut  = (string) ($flags['scaffold-out'] ?? $outDir . '/scaffold');
+$withCustom   = isset($flags['with-custom']);
 
 if (!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)) {
     fwrite(STDERR, "cannot create out dir: $outDir\n");
@@ -162,10 +187,53 @@ foreach ($entities as $e) {
 
 file_put_contents("$outDir/kingdee_metadata_report.md", implode("\n", $lines) . "\n");
 
+/* ---------------- optional: class scaffold ---------------- */
+
+$scaffoldFiles = 0;
+if ($scaffold) {
+    if (!is_dir($scaffoldOut) && !mkdir($scaffoldOut, 0777, true) && !is_dir($scaffoldOut)) {
+        fwrite(STDERR, "cannot create scaffold dir: $scaffoldOut\n");
+        exit(1);
+    }
+
+    $blocks = $withCustom ? merge_blocks($standardOut, $customOut) : $standardOut;
+
+    $map = [];
+    $usedClass = [];
+    foreach ($blocks as $b) {
+        $cls = studly((string) $b['entity_code']);
+        if (isset($usedClass[$cls])) {
+            $usedClass[$cls]++;
+            $cls .= (string) $usedClass[$cls];
+        } else {
+            $usedClass[$cls] = 1;
+        }
+
+        file_put_contents("$scaffoldOut/$cls.php", render_entity_class($b, $cls, $scaffoldNs));
+        $map[(string) $b['entity_code']] = $scaffoldNs . '\\' . $cls;
+        $scaffoldFiles++;
+    }
+
+    $rows = [];
+    foreach ($map as $code => $fqcn) {
+        $rows[] = '    ' . var_export($code, true) . ' => ' . var_export($fqcn, true) . ',';
+    }
+    file_put_contents(
+        "$scaffoldOut/map.php",
+        "<?php\n\ndeclare(strict_types=1);\n\n"
+        . "/** entity_code => generated class FQCN. Loop these into Entity::register(\$code, \$class). */\n"
+        . "return [\n" . implode("\n", $rows) . "\n];\n"
+    );
+}
+
 echo "OK\n";
 echo "entities=" . count($entities)
     . " standard=$stdFieldCount custom=$custFieldCount dupes=$dupes anomalies=" . count($anomalies) . "\n";
 echo "wrote:\n  $outDir/kingdee_field.standard.json\n  $outDir/kingdee_field.custom.json\n  $outDir/kingdee_metadata_report.md\n";
+if ($scaffold) {
+    echo "  scaffold: $scaffoldFiles class(es) + map.php  ->  $scaffoldOut"
+        . ($withCustom ? "  (with 二开 constants)" : '') . "\n";
+}
 
 /* ---------------- helpers ---------------- */
 
@@ -235,4 +303,132 @@ function count_flat(array $entityBlocks): int
         $n += count_fields($b);
     }
     return $n;
+}
+
+/** SAL_SaleOrder -> SalSaleorder (a starting name; developer renames freely). */
+function studly(string $code): string
+{
+    $parts = preg_split('/[^A-Za-z0-9]+/', $code, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $out = '';
+    foreach ($parts as $p) {
+        $out .= ucfirst(strtolower($p));
+    }
+
+    return $out !== '' ? $out : 'Entity';
+}
+
+/** FCustId / FBUSINESSDEPTID.FName -> FLD_FCUSTID / FLD_FBUSINESSDEPTID_FNAME. */
+function const_name(string $key): string
+{
+    return 'FLD_' . strtoupper(preg_replace('/[^A-Za-z0-9]/', '_', $key) ?? '');
+}
+
+/** Fold custom (二开) fields into the standard blocks by entity + segment. */
+function merge_blocks(array $std, array $cus): array
+{
+    $byId = [];
+    foreach ($std as $i => $b) {
+        $byId[$b['entity_id']] = $i;
+    }
+
+    foreach ($cus as $cb) {
+        if (!isset($byId[$cb['entity_id']])) {
+            continue;
+        }
+        $idx = $byId[$cb['entity_id']];
+        $target = $std[$idx];
+
+        foreach ($cb['segments'] as $cseg) {
+            $found = null;
+            foreach ($target['segments'] as $j => $sseg) {
+                if ($sseg['code'] === $cseg['code']) {
+                    $found = $j;
+                    break;
+                }
+            }
+            if ($found === null) {
+                $target['segments'][] = $cseg;
+                continue;
+            }
+            $have = [];
+            foreach ($target['segments'][$found]['fields'] as $f) {
+                $have[$f['key']] = true;
+            }
+            foreach ($cseg['fields'] as $f) {
+                if (!isset($have[$f['key']])) {
+                    $target['segments'][$found]['fields'][] = $f;
+                }
+            }
+            usort($target['segments'][$found]['fields'], static fn ($a, $b) => strcmp($a['key'], $b['key']));
+        }
+        usort($target['segments'], static fn ($a, $b) => strcmp($a['code'], $b['code']));
+        $std[$idx] = $target;
+    }
+
+    return $std;
+}
+
+/** Render one editable scaffold class for an entity block. */
+function render_entity_class(array $block, string $class, string $namespace): string
+{
+    $code = (string) $block['entity_code'];
+    $name = (string) ($block['entity_name'] ?? '');
+    $module = (string) ($block['module'] ?? '');
+
+    $out = "<?php\n\ndeclare(strict_types=1);\n\n";
+    $out .= "namespace $namespace;\n\n";
+    $out .= "use K3Cloud\\Entity;\n\n";
+    $out .= "/**\n";
+    $out .= " * " . ($name !== '' ? "$name " : '') . "($code)" . ($module !== '' ? " — $module" : '') . ".\n";
+    $out .= " *\n";
+    $out .= " * Generated SCAFFOLD from K/3 Cloud metadata — copy into your project and edit.\n";
+    $out .= " * These constants/helpers are a convenience for completion, NOT a whitelist:\n";
+    $out .= " * any other field (incl. 二开) still works via ->set()/->custom()/->package()/->line().\n";
+    $out .= " */\n";
+    $out .= "final class $class extends Entity\n{\n";
+    $out .= "    public const FORM_ID = " . var_export($code, true) . ";\n";
+
+    $usedConst = [];
+    $entrySegments = [];
+
+    foreach ($block['segments'] as $seg) {
+        $scode = (string) $seg['code'];
+        if (($seg['fields'] ?? []) === []) {
+            continue;
+        }
+        $out .= "\n    // " . (($seg['name'] ?? '') !== '' ? $seg['name'] : $scode) . "  [$scode]\n";
+        foreach ($seg['fields'] as $f) {
+            $cn = const_name((string) $f['key']);
+            if (isset($usedConst[$cn])) {
+                $usedConst[$cn]++;
+                $cn .= '__' . $usedConst[$cn];
+            } else {
+                $usedConst[$cn] = 1;
+            }
+            $line = "    public const $cn = " . var_export((string) $f['key'], true) . ";";
+            $title = str_replace(["\r", "\n", "*/"], ' ', (string) ($f['title'] ?? ''));
+            if ($title !== '') {
+                $line .= "  // " . $title;
+            }
+            $out .= $line . "\n";
+        }
+        if ($scode !== 'FBillHead' && $scode !== '(unsegmented)') {
+            $entrySegments[] = $scode;
+        }
+    }
+
+    $seenMethod = [];
+    foreach ($entrySegments as $scode) {
+        $method = 'add' . studly($scode) . 'Line';
+        if (isset($seenMethod[$method])) {
+            continue;
+        }
+        $seenMethod[$method] = true;
+        $out .= "\n    public function $method(callable|array \$row): static\n";
+        $out .= "    {\n        return \$this->line(" . var_export($scode, true) . ", \$row);\n    }\n";
+    }
+
+    $out .= "}\n";
+
+    return $out;
 }
