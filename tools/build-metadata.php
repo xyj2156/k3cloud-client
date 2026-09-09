@@ -85,14 +85,9 @@ foreach ($fields as $f) {
 $standardOut = build_entities($standard, $entById);
 $customOut   = build_entities($custom, $entById);
 
-write_json("$outDir/kingdee_entity.json", array_map(
-    static fn ($e) => [
-        'entity_code' => $e['entity_code'],
-        'entity_name' => $e['entity_name'],
-        'module'      => $e['entity_description'],
-    ],
-    $entities
-));
+// NOTE: no separate entity file is emitted. Entity code/name/module is embedded
+// in every entity block of the field files, and the raw provided exports (entity
+// + the full field dump) must never be committed — see .gitignore /.docs rules.
 write_json("$outDir/kingdee_field.standard.json", $standardOut);
 write_json("$outDir/kingdee_field.custom.json", $customOut);
 
@@ -118,10 +113,9 @@ $lines[] = '| custom 二开 fields (split out) | ' . $custFieldCount . ' |';
 $lines[] = '| exact duplicates dropped | ' . $dupes . ' |';
 $lines[] = '| anomalies (non-letter field keys) | ' . count($anomalies) . ' |';
 $lines[] = '';
-$lines[] = '## Files';
-$lines[] = '- `kingdee_entity.json` — normalized `{entity_code, entity_name, module}`.';
-$lines[] = '- `kingdee_field.standard.json` — standard fields grouped by entity → segment.';
-$lines[] = '- `kingdee_field.custom.json` — 二开 fields grouped the same way (kept, not deleted).';
+$lines[] = '## Files (cleaned output only; raw provided exports are git-ignored)';
+$lines[] = '- `kingdee_field.standard.json` — standard fields grouped by entity → segment (each block embeds entity_code / entity_name / module).';
+$lines[] = '- `kingdee_field.custom.json` — 二开 fields grouped the same way (kept for review, never deleted).';
 $lines[] = '';
 $lines[] = '## Classification rule';
 $lines[] = '';
@@ -171,7 +165,7 @@ file_put_contents("$outDir/kingdee_metadata_report.md", implode("\n", $lines) . 
 echo "OK\n";
 echo "entities=" . count($entities)
     . " standard=$stdFieldCount custom=$custFieldCount dupes=$dupes anomalies=" . count($anomalies) . "\n";
-echo "wrote:\n  $outDir/kingdee_entity.json\n  $outDir/kingdee_field.standard.json\n  $outDir/kingdee_field.custom.json\n  $outDir/kingdee_metadata_report.md\n";
+echo "wrote:\n  $outDir/kingdee_field.standard.json\n  $outDir/kingdee_field.custom.json\n  $outDir/kingdee_metadata_report.md\n";
 
 /* ---------------- helpers ---------------- */
 

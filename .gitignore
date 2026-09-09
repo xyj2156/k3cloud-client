@@ -9,3 +9,11 @@
 .env
 .env.local
 .php-cs-fixer.cache
+
+# Raw K/3 Cloud metadata exports (user-provided) must NEVER be committed.
+# Only the cleaned artifacts under .docs/ (produced by tools/build-metadata.php)
+# are tracked: kingdee_field.standard.json / kingdee_field.custom.json / report.
+/.docs/raw/
+/.docs/kingdee_field.json
+/.docs/kingdee_entity.json
+
