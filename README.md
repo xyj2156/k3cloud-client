@@ -226,17 +226,28 @@ a fresh K/3 Cloud export somewhere git-ignored (e.g. `.docs/raw/`) and run:
 php tools/build-metadata.php [.docs/raw/entity.json] [.docs/raw/field.json] [.docs]
 ```
 
+Add `--scaffold` to also emit a starting per-entity PHP class (FORM_ID + field-name
+constants + entry-line helpers) into a git-ignored `.docs/scaffold/` — a template to
+copy into your own project and edit. `--with-custom` folds 二开 fields in as
+constants too; `--namespace=...` sets the generated namespace. None of it is a
+whitelist — unknown fields still work via `->custom()/->package()`.
+
+```bash
+php tools/build-metadata.php ... --scaffold --with-custom --namespace=App\\K3Cloud\\Entities
+```
+
 Only the cleaned artifacts (`kingdee_field.standard.json`,
 `kingdee_field.custom.json`, the report) are tracked; the raw export never is.
 
 ## Roadmap
 
-- **Fluent Bill builder** — *runtime shipped* (`Entity`/`Line`, `->bill()/->entity()`,
+- **Fluent Bill builder** — *shipped* (`Entity`/`Line`, `->bill()/->entity()`,
   typed subclasses, named terminals, `->call()`, merge semantics, identifier-op
   `@param` completion). Design in
   [`docs/design-bill-builder.md`](docs/design-bill-builder.md).
-- **Planned:** `build-metadata.php` scaffold mode — generate a starting per-entity
-  class + field-name constants from (optionally user-supplied, additive) metadata.
+- **Metadata scaffold** — *shipped*: `build-metadata.php --scaffold` emits a
+  starting per-entity class + field-name constants + entry helpers (optionally
+  `--with-custom` to include 二开 fields); output is a git-ignored dev template.
 
 ## License
 
