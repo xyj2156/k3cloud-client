@@ -1,0 +1,11 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
+/phpunit.xml.dist.bak
+.idea/
+.vscode/
+*.log
+.env
+.env.local
+.php-cs-fixer.cache
