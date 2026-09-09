@@ -12,25 +12,22 @@ declare(strict_types=1);
  * AuthService.ValidateUser login once, transparently, on the first call, and
  * reuses the kdsessionid cookie afterwards.
  *
- * If your server uses self-signed HTTPS, keep the ->withoutTlsVerification()
- * call below — otherwise remove it.
+ * If your server uses self-signed HTTPS, keep the ->insecure() call below —
+ * otherwise remove it (verification is on by default).
  */
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use K3Cloud\Config;
 use K3Cloud\K3CloudClient;
 
-$config = Config::password(
+$api = K3CloudClient::password(
     serverUrl: 'https://192.168.1.100:8080/K3Cloud',
     acctId:    '62f3c9b0xxxxxxxx',
     userName:  'administrator',
     password:  'your-password',
     lcid:      2052,
     orgNum:    0,
-)->withoutTlsVerification();
-
-$api = new K3CloudClient($config);
+)->insecure();
 
 // A view call — the login happens automatically before the request goes out.
 $result = $api->view('BD_MATERIAL', ['Number' => '01.001', 'Id' => ''])

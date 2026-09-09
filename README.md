@@ -52,13 +52,14 @@ foreach ($rows->rows() as [$id, $number, $name]) {
 ### Option B — username / password session
 
 ```php
-use K3Cloud\Config;
 use K3Cloud\K3CloudClient;
 
-$api = new K3CloudClient(
-    Config::password('https://192.168.1.100:8080/K3Cloud', '62f3...','administrator','pwd')
-        ->withoutTlsVerification()   // only for self-signed certs
-);
+$api = K3CloudClient::password(
+    serverUrl: 'https://192.168.1.100:8080/K3Cloud',
+    acctId:    '62f3c9b0xxxxxxxx',
+    userName:  'administrator',
+    password:  'your-password',
+)->insecure();   // only for self-signed / on-premise certs
 
 $created = $api->save('BD_Currency', [
     'NeedUpDateFields' => [],
@@ -67,6 +68,30 @@ $created = $api->save('BD_Currency', [
 ])->throwIfError();
 
 echo $created->id(), ' / ', $created->number(), "\n";
+```
+
+Both modes are created the same way — a named constructor returning a client.
+Options chain identically regardless of auth mode:
+
+```php
+$api = K3CloudClient::password($url, $acct, $user, $pwd)
+    ->insecure()               // trust self-signed certs
+    ->withTimeouts(10, 60);    // connect / request, seconds
+```
+
+### Advanced: building a `Config` directly
+
+If you need to compose or persist configuration before creating the client, use
+`K3Cloud\Config` explicitly and inject it — functionally equivalent to the
+named constructors:
+
+```php
+use K3Cloud\Config;
+use K3Cloud\K3CloudClient;
+
+$api = new K3CloudClient(
+    Config::appSignature($url, $acct, $user, $appId, $appSecret)->withTlsVerification(true)
+);
 ```
 
 That is the whole onboarding story: create the client, call an operation. Login
@@ -118,9 +143,10 @@ $result = $api->query('SAL_SaleOrder', ['FSBILLNO', 'FTOTALAMOUNT'], [
 
 - **`serverUrl`** — the WebAPI root, e.g. `https://host:port/K3Cloud` (private)
   or `https://api.kingdee.com/galaxyapi/` (public). A trailing slash is optional.
-- **TLS** — verification is **on by default**. Call
-  `->withoutTlsVerification()` for self-signed / private installs.
-- **Timeouts** — `Config::withTimeouts($connect, $request)`.
+- **TLS** — verification is **on by default**. Call `->insecure()` on the client
+  (or `Config::withoutTlsVerification()`) for self-signed / private installs.
+- **Timeouts** — `->withTimeouts($connect, $request)` on the client, or
+  `Config::withTimeouts(...)` when building a `Config` directly.
 
 ### Login payload compatibility
 
