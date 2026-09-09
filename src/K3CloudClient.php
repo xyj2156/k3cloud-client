@@ -42,12 +42,21 @@ class K3CloudClient
     final public function __construct(Config $config, ?Transport $transport = null, ?AuthStrategy $auth = null)
     {
         $this->config = $config;
-        $this->transport = $transport ?? new CurlTransport(
+        $this->transport = $transport ?? $this->makeTransport($config);
+        $this->auth = $auth ?? $this->defaultAuth($config, $this->transport);
+    }
+
+    /**
+     * Build the transport for a given config. Overridable seam so a subclass that
+     * injects a custom transport can keep it across fluent reconfiguration.
+     */
+    protected function makeTransport(Config $config): Transport
+    {
+        return new CurlTransport(
             $config->connectTimeout,
             $config->requestTimeout,
             $config->verifyTls,
         );
-        $this->auth = $auth ?? $this->defaultAuth($config, $this->transport);
     }
 
     /* ---------------------------------------------------------------------
@@ -98,9 +107,10 @@ class K3CloudClient
     /* ---------------------------------------------------------------------
      |  Fluent options — identical for both auth modes.
      |  Each returns a new, same-class client built from an updated immutable
-     |  Config (so the transport / auth are rebuilt consistently). Because a
-     |  fresh SessionAuth starts logged out, calling these mid-stream will
-     |  simply trigger one transparent re-login on the next request.
+     |  Config. The transport is rebuilt so the new setting takes effect, and the
+     |  existing auth is *rebased* onto it: a signature strategy is stateless, and
+     |  a session strategy keeps its live kdsessionid (no re-login) as long as the
+     |  credential identity is unchanged. So chaining is safe to do at any time.
      * ------------------------------------------------------------------- */
 
     /** Trust any TLS certificate (self-signed / on-premise installs). */
@@ -123,10 +133,15 @@ class K3CloudClient
         return $this->withConfig($this->config->withTimeouts($connectTimeout, $requestTimeout));
     }
 
-    /** Rebuild a client of the same class from a new immutable config. */
+    /**
+     * Rebuild a same-class client from a new config, carrying the current session
+     * across by rebasing the existing auth onto the freshly built transport.
+     */
     protected function withConfig(Config $config): static
     {
-        return new static($config);
+        $transport = $this->makeTransport($config);
+
+        return new static($config, $transport, $this->auth->withDependencies($config, $transport));
     }
 
     /* ---------------------------------------------------------------------

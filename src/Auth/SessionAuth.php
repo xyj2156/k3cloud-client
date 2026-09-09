@@ -35,11 +35,33 @@ class SessionAuth implements AuthStrategy
 
     private bool $loggedIn = false;
 
+    /**
+     * Hash of the credential-bearing config the current session was established
+     * for, so a rebase can tell "reconfigure" (keep session) from "different
+     * login" (drop session). Null until/unless logged in.
+     */
+    private ?string $establishedFor = null;
+
     public function __construct(
         private readonly Config $config,
         private readonly Transport $transport,
     ) {
         $this->cookies = new CookieJar();
+    }
+
+    public function withDependencies(Config $config, Transport $transport): AuthStrategy
+    {
+        $next = new static($config, $transport);
+
+        // Preserve the live session only when the identity that produced it is
+        // unchanged; otherwise the next request must authenticate afresh.
+        if ($this->loggedIn && $this->establishedFor === self::identityKey($config)) {
+            $next->loggedIn = true;
+            $next->establishedFor = $this->establishedFor;
+            $next->cookies = clone $this->cookies;
+        }
+
+        return $next;
     }
 
     public function decorate(HttpRequest $request): HttpRequest
@@ -85,6 +107,7 @@ class SessionAuth implements AuthStrategy
     public function invalidate(): void
     {
         $this->loggedIn = false;
+        $this->establishedFor = null;
         $this->cookies->clear();
     }
 
@@ -138,6 +161,17 @@ class SessionAuth implements AuthStrategy
         }
 
         $this->loggedIn = true;
+        $this->establishedFor = self::identityKey($this->config);
+    }
+
+    /**
+     * Fingerprint of the credential-bearing config fields that a session belongs
+     * to. TLS/timeout changes are intentionally excluded (they don't affect who
+     * is logged in); identity changes are not.
+     */
+    private static function identityKey(Config $c): string
+    {
+        return sha1($c->serverUrl . '|' . $c->acctId . '|' . $c->userName . '|' . $c->password . '|' . $c->lcid);
     }
 
     /**

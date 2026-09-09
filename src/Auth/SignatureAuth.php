@@ -7,6 +7,7 @@ namespace K3Cloud\Auth;
 use K3Cloud\Config;
 use K3Cloud\Http\HttpRequest;
 use K3Cloud\Http\HttpResponse;
+use K3Cloud\Http\Transport;
 use K3Cloud\Support\Signer;
 
 /**
@@ -25,6 +26,12 @@ final class SignatureAuth implements AuthStrategy
 {
     public function __construct(private readonly Config $config)
     {
+    }
+
+    public function withDependencies(Config $config, Transport $transport): AuthStrategy
+    {
+        // Stateless: signing is recomputed per request from the (new) config.
+        return new self($config);
     }
 
     public function decorate(HttpRequest $request): HttpRequest
