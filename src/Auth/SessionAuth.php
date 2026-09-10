@@ -19,6 +19,11 @@ use K3Cloud\Support\Envelope;
  * （及随附）Cookie，并在其后每个请求上重放。登录是惰性的：发生在第一个被装饰的请求上，
  * 对调用方透明。当某响应表明会话已过期时，丢弃该状态，使重试会重新鉴权。
  *
+ * 会话可经 {@see SessionStore} 跨进程持久化（K3CloudClient 默认使用 FileSessionStore）：
+ * 构造时按当前凭据指纹水合已落盘的会话；之后的"会话丢失 → 失效 → 重登 → 重放"链路
+ * 原样负责自愈，失效条目会在重登时被覆盖 / 删除。直接 new 本类且未传 store 时不持久化，
+ * 行为与会话仅存内存的实现一致。
+ *
  * 关于登录载荷：参数顺序遵循常用的 [acctId, userName, password, lcid]。少数服务端版本
  * 期望不同的参数列表；若你的服务端拒绝登录，请覆盖 {@see self::loginParameters()}（子类）
  * ——其余代码无需改动。
@@ -28,6 +33,8 @@ class SessionAuth implements AuthStrategy
     private const VALIDATE_USER_SERVICE = 'Kingdee.BOS.WebApi.ServicesStub.AuthService.ValidateUser';
 
     private CookieJar $cookies;
+
+    private readonly SessionStore $store;
 
     private bool $loggedIn = false;
 
@@ -40,22 +47,59 @@ class SessionAuth implements AuthStrategy
     public function __construct(
         private readonly Config $config,
         private readonly Transport $transport,
+        ?SessionStore $store = null,
     ) {
         $this->cookies = new CookieJar();
+        $this->store = $store ?? new NullSessionStore();
+        $this->restore();
+    }
+
+    /**
+     * 从存储中按当前凭据指纹水合会话。读到坏条目（缺失 / 损坏 / 形状不符）时保持
+     * 未登录——那只会导致下一次请求照常登录一次。
+     */
+    private function restore(): void
+    {
+        $data = $this->store->load(self::identityKey($this->config));
+        if ($data === null) {
+            return;
+        }
+
+        $this->cookies = CookieJar::fromArray($data['cookies']);
+        $this->loggedIn = true;
+        $this->establishedFor = self::identityKey($this->config);
+    }
+
+    /**
+     * 返回一个换用给定持久化存储的策略副本；当前活动会话（若身份未变）原样带过去。
+     */
+    public function withStore(SessionStore $store): self
+    {
+        $next = new static($this->config, $this->transport, $store);
+        $next->adoptSession($this);
+
+        return $next;
     }
 
     public function withDependencies(Config $config, Transport $transport): AuthStrategy
     {
-        $next = new static($config, $transport);
-
-        // 仅当产生该会话的身份未变时才保留它；否则下一个请求必须重新鉴权。
-        if ($this->loggedIn && $this->establishedFor === self::identityKey($config)) {
-            $next->loggedIn = true;
-            $next->establishedFor = $this->establishedFor;
-            $next->cookies = clone $this->cookies;
-        }
+        // 存储随策略走；新身份若有落盘会话，构造时的 restore() 已水合。
+        $next = new static($config, $transport, $this->store);
+        $next->adoptSession($this);
 
         return $next;
+    }
+
+    /**
+     * 仅当产生旧会话的身份与自身配置一致时，把旧实例的内存会话带过来（覆盖之）。
+     */
+    private function adoptSession(self $previous): void
+    {
+        if ($previous->loggedIn && $previous->establishedFor === self::identityKey($this->config)) {
+            $this->loggedIn = true;
+            $this->establishedFor = $previous->establishedFor;
+            $this->cookies = clone $previous->cookies;
+        }
     }
 
     public function decorate(HttpRequest $request): HttpRequest
@@ -147,10 +191,15 @@ class SessionAuth implements AuthStrategy
     }
 
     /**
-     * 强制下一个请求重新登录（例如切换组织之后）。
+     * 强制下一个请求重新登录（例如切换组织之后）。同时丢弃落盘条目，
+     * 避免把已失效的会话 id 再交给下一个进程。
      */
     public function invalidate(): void
     {
+        if ($this->establishedFor !== null) {
+            $this->store->forget($this->establishedFor);
+        }
+
         $this->loggedIn = false;
         $this->establishedFor = null;
         $this->cookies->clear();
@@ -207,6 +256,10 @@ class SessionAuth implements AuthStrategy
 
         $this->loggedIn = true;
         $this->establishedFor = self::identityKey($this->config);
+
+        // 新会话立即落盘：下一个进程（cron / 队列 / 再起的 Web 请求）可直接重放，
+        // 免去一次 ValidateUser 往返。落盘失败仅退化为"本进程内复用"，不影响本次调用。
+        $this->store->save($this->establishedFor, $this->cookies->all());
     }
 
     /**

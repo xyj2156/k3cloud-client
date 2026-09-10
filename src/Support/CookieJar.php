@@ -26,6 +26,32 @@ final class CookieJar
         }
     }
 
+    /**
+     * 直接写入 / 覆盖一个 Cookie（名称保持大小写不敏感）。用于从持久化存储水合会话。
+     */
+    public function set(string $name, string $value): void
+    {
+        $name = trim($name);
+        if ($name !== '') {
+            $this->cookies[strtolower($name)] = $value;
+        }
+    }
+
+    /**
+     * 由 SessionStore 读回的 "名称 => 值" 映射水合一个 CookieJar。
+     *
+     * @param array<string,string> $cookies
+     */
+    public static function fromArray(array $cookies): self
+    {
+        $jar = new self();
+        foreach ($cookies as $name => $value) {
+            $jar->set((string) $name, (string) $value);
+        }
+
+        return $jar;
+    }
+
     public function get(string $name): ?string
     {
         return $this->cookies[strtolower($name)] ?? null;

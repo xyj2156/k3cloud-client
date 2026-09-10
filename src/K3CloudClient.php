@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace K3Cloud;
 
 use K3Cloud\Auth\AuthStrategy;
+use K3Cloud\Auth\FileSessionStore;
+use K3Cloud\Auth\NullSessionStore;
 use K3Cloud\Auth\SessionAuth;
+use K3Cloud\Auth\SessionStore;
 use K3Cloud\Auth\SignatureAuth;
 use K3Cloud\Exception\ApiException;
 use K3Cloud\Http\CurlTransport;
@@ -26,6 +29,9 @@ use K3Cloud\Support\Envelope;
  *   $rows = $api->query('BD_Currency', ['FCURRENCYID','FNUMBER'])->rows();
  *
  * 默认情况下操作返回 {@see Result}（业务错误不抛异常）；想要异常就在链尾加 ->throwIfError()。
+ *
+ * 密码模式的会话（kdsessionid）默认落盘到系统临时目录，短生命周期进程可跨次运行复用登录，
+ * 失效时自动重登；位置可改（->withSessionStorePath()）也可关（->withoutSessionPersistence()）。
  */
 class K3CloudClient
 {
@@ -91,9 +97,13 @@ class K3CloudClient
 
     protected function defaultAuth(Config $config, Transport $transport): AuthStrategy
     {
-        return $config->authMode === Config::MODE_SESSION
-            ? new SessionAuth($config, $transport)
-            : new SignatureAuth($config);
+        // 密码模式默认开启会话落盘：kdsessionid 写入 FileSessionStore（见 withSessionStore），
+        // 短生命周期进程由此免去每进程一次的 ValidateUser 登录。
+        if ($config->authMode !== Config::MODE_SESSION) {
+            return new SignatureAuth($config);
+        }
+
+        return new SessionAuth($config, $transport, new FileSessionStore());
     }
 
     public function config(): Config
@@ -162,6 +172,37 @@ class K3CloudClient
     public function withTimeouts(int $connectTimeout, int $requestTimeout): static
     {
         return $this->withConfig($this->config->withTimeouts($connectTimeout, $requestTimeout));
+    }
+
+    /**
+     * 更换密码模式下的会话持久化存储（默认：{@see FileSessionStore}，写到系统临时目录）。
+     * 传入任何 {@see SessionStore} 实现（Redis、数据库、自建缓存……）即可替换落盘方式；
+     * 活动会话会带到新存储上。签名模式无会话概念，调用为无害的空操作。
+     */
+    public function withSessionStore(SessionStore $store): static
+    {
+        $auth = $this->auth instanceof SessionAuth
+            ? $this->auth->withStore($store)
+            : $this->auth;
+
+        return new static($this->config, $this->transport, $auth);
+    }
+
+    /**
+     * 快捷方式：会话文件改存到指定目录（仍为默认的文件存储）。目录需对运行用户可写。
+     */
+    public function withSessionStorePath(string $dir): static
+    {
+        return $this->withSessionStore(new FileSessionStore($dir));
+    }
+
+    /**
+     * 关闭会话落盘：kdsessionid 只保留在当前进程内存中，每个新进程都会重新登录一次
+     * （即引入持久化之前的行为）。
+     */
+    public function withoutSessionPersistence(): static
+    {
+        return $this->withSessionStore(new NullSessionStore());
     }
 
     /**
