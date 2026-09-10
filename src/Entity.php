@@ -36,7 +36,10 @@ class Entity
     /** @var array<string,class-string<self>> form id => 开发者类 */
     private static array $registry = [];
 
-    public function __construct(
+    /**
+     * @param array<string,mixed> $initial 完整数据载荷，或裸 Model 字典
+     */
+    final public function __construct(
         protected readonly K3CloudClient $api,
         protected readonly string $formId,
         array $initial = [],
@@ -198,11 +201,17 @@ class Entity
         return $payload;
     }
 
+    /**
+     * @param array<string,mixed>|null $patch 发送前递归合并进 Model 的补丁
+     */
     public function save(?array $patch = null): Result
     {
         return $this->api->save($this->formId, $this->build($patch));
     }
 
+    /**
+     * @param array<string,mixed>|null $patch 发送前递归合并进 Model 的补丁
+     */
     public function draft(?array $patch = null): Result
     {
         return $this->api->draft($this->formId, $this->build($patch));
@@ -210,6 +219,8 @@ class Entity
 
     /**
      * 通用逃生口：把当前载荷发送到任意 DynamicFormService 操作。
+     *
+     * @param array<string,mixed>|null $patch 发送前递归合并进 Model 的补丁
      */
     public function call(string $op, ?array $patch = null): Result
     {

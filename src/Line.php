@@ -16,6 +16,9 @@ class Line
     /** @var array<string,mixed> */
     protected array $row = [];
 
+    /**
+     * @param array<string,mixed> $initial 分录行的初始字段
+     */
     public function __construct(array $initial = [])
     {
         $this->row = $initial;

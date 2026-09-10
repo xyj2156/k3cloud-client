@@ -25,6 +25,7 @@
         "ext-mbstring": "*"
     },
     "require-dev": {
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^10.5 || ^11.0"
     },
     "autoload": {
@@ -38,7 +39,9 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "test:ci": "phpunit --exclude-group online",
+        "analyse": "phpstan analyse --no-progress"
     },
     "config": {
         "sort-packages": true

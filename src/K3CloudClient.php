@@ -302,11 +302,17 @@ class K3CloudClient
         return $this->operation('Save', [$formId, $model]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function batchSave(string $formId, array|string $data): Result
     {
         return $this->operation('BatchSave', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $model 业务数据载荷，原样进入信封 parameters
+     */
     public function draft(string $formId, array|string $model): Result
     {
         return $this->operation('Draft', [$formId, $model]);
@@ -362,41 +368,65 @@ class K3CloudClient
         return $this->operation('Delete', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function allocate(string $formId, array|string $data): Result
     {
         return $this->operation('Allocate', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function cancelAllocate(string $formId, array|string $data): Result
     {
         return $this->operation('CancelAllocate', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function cancelAssign(string $formId, array|string $data): Result
     {
         return $this->operation('CancelAssign', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function push(string $formId, array|string $data): Result
     {
         return $this->operation('Push', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function groupSave(string $formId, array|string $data): Result
     {
         return $this->operation('GroupSave', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function disassembly(string $formId, array|string $data): Result
     {
         return $this->operation('Disassembly', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function flexSave(string $formId, array|string $data): Result
     {
         return $this->operation('FlexSave', [$formId, $data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function getSysReportData(string $formId, array|string $data): Result
     {
         return $this->operation('GetSysReportData', [$formId, $data]);
@@ -404,6 +434,8 @@ class K3CloudClient
 
     /**
      * 对某个单据执行任意操作编码。
+     *
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
      */
     public function executeOperation(string $formId, string $operation, array|string $data): Result
     {
@@ -412,6 +444,8 @@ class K3CloudClient
 
     /**
      * 原始的单参数单据查询（JSON 体）。接受数组或字符串。
+     *
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
      */
     public function executeBillQuery(array|string $data): Result
     {
@@ -420,6 +454,8 @@ class K3CloudClient
 
     /**
      * 较新的单据查询（V7.4+）。接受数组或 JSON 字符串。
+     *
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
      */
     public function billQuery(array|string $data): Result
     {
@@ -453,41 +489,65 @@ class K3CloudClient
         return $this->executeBillQuery($data);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function queryBusinessInfo(array|string $data): Result
     {
         return $this->operation('QueryBusinessInfo', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function queryGroupInfo(array|string $data): Result
     {
         return $this->operation('QueryGroupInfo', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function workflowAudit(array|string $data): Result
     {
         return $this->operation('WorkflowAudit', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function groupDelete(array|string $data): Result
     {
         return $this->operation('GroupDelete', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function switchOrg(array|string $data): Result
     {
         return $this->operation('SwitchOrg', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function sendMsg(array|string $data): Result
     {
         return $this->operation('SendMsg', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function attachmentUpload(array|string $data): Result
     {
         return $this->operation('AttachmentUpload', [$data]);
     }
 
+    /**
+     * @param array<mixed>|string $data 业务数据载荷，原样进入信封 parameters
+     */
     public function attachmentDownload(array|string $data): Result
     {
         return $this->operation('AttachmentDownLoad', [$data]);

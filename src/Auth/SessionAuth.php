@@ -44,7 +44,10 @@ class SessionAuth implements AuthStrategy
      */
     private ?string $establishedFor = null;
 
-    public function __construct(
+    /**
+     * 构造函数签名对子类锁死（final）——扩展点是覆盖 loginParameters()，不是改构造参数。
+     */
+    final public function __construct(
         private readonly Config $config,
         private readonly Transport $transport,
         ?SessionStore $store = null,

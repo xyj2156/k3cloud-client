@@ -17,7 +17,7 @@ use K3Cloud\Exception\K3CloudException;
 final class Envelope
 {
     /**
-     * @param list<mixed> $parameters
+     * @param array<array-key,mixed> $parameters 按位序编码（关联/稀疏数组会被归一为定位数组）
      */
     public static function encode(array $parameters): string
     {

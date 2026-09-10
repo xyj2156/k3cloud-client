@@ -68,7 +68,9 @@ final class Result
      */
     public function rows(): array
     {
-        return $this->isList() ? $this->payload : [];
+        return is_array($this->payload) && array_is_list($this->payload)
+            ? $this->payload
+            : [];
     }
 
     /**

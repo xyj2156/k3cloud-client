@@ -151,7 +151,7 @@ final class Config
             if (trim((string) $this->appId) === '' || trim((string) $this->appSecret) === '') {
                 throw new ConfigException('Signature mode requires both appId and appSecret.');
             }
-            $parts = explode('_', $this->appId, 2);
+            $parts = explode('_', (string) $this->appId, 2);
             if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
                 throw new ConfigException('appId must be "clientId_secretToken" (a single underscore separating the two parts).');
             }

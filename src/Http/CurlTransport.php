@@ -31,12 +31,17 @@ final class CurlTransport implements Transport
             throw new TransportException('Unable to initialise a cURL handle.');
         }
 
+        $url = $request->url;
+        if ($url === '') {
+            throw new TransportException('HttpRequest url must not be empty.');
+        }
+
         $headerLines = [];
         $buffer = '';
 
         curl_setopt_array($handle, [
-            CURLOPT_URL            => $request->url,
-            CURLOPT_CUSTOMREQUEST  => $request->method,
+            CURLOPT_URL            => $url,
+            CURLOPT_CUSTOMREQUEST  => $request->method !== '' ? $request->method : null,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 3,

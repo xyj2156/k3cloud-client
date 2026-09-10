@@ -1,0 +1,6 @@
+# 质量门：level 8 必须零错误（composer analyse / CI 共用）。
+# 已知 level 9 缺口（约 21 条，属 json_decode 载荷的 mixed 取用硬化，非缺陷）留待专项处理。
+parameters:
+    level: 8
+    paths:
+        - src
