@@ -1,0 +1,9 @@
+# 开发文件不进发行包：packagist/GitHub 的 zip 只留 src、examples、README、LICENSE、CHANGELOG。
+/.github/            export-ignore
+/tests/              export-ignore
+/tools/              export-ignore
+/docs/               export-ignore
+/.docs/              export-ignore
+/phpunit.xml.dist    export-ignore
+/phpstan.neon        export-ignore
+/.gitattributes      export-ignore
