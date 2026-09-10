@@ -1,5 +1,11 @@
 [简体中文](README.md) | **English**
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![Total Downloads](https://img.shields.io/packagist/dt/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![PHP from Packagist](https://img.shields.io/packagist/php-v/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![License](https://img.shields.io/packagist/l/xyj2156/k3cloud-client.svg)](LICENSE)
+[![Tests](https://github.com/xyj2156/k3cloud-client/actions/workflows/tests.yml/badge.svg)](https://github.com/xyj2156/k3cloud-client/actions/workflows/tests.yml)
+
 # k3cloud-client — an unofficial PHP client for the Kingdee Cloud (K/3 Cloud) WebAPI
 
 A small, dependency-light, **independently written** client for the K/3 Cloud

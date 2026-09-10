@@ -1,5 +1,11 @@
 **简体中文** | [English](README_en.md)
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![Total Downloads](https://img.shields.io/packagist/dt/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![PHP from Packagist](https://img.shields.io/packagist/php-v/xyj2156/k3cloud-client.svg)](https://packagist.org/packages/xyj2156/k3cloud-client)
+[![License](https://img.shields.io/packagist/l/xyj2156/k3cloud-client.svg)](LICENSE)
+[![Tests](https://github.com/xyj2156/k3cloud-client/actions/workflows/tests.yml/badge.svg)](https://github.com/xyj2156/k3cloud-client/actions/workflows/tests.yml)
+
 # k3cloud-client —— 面向金蝶云（K/3 Cloud）WebAPI 的非官方 PHP 客户端
 
 一个轻量、无第三方依赖、**独立编写**的 K/3 Cloud WebAPI 客户端。它以"快速上手"为核心，
