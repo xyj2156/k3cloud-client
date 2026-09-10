@@ -1,6 +1,6 @@
 {
     "name": "xyj2156/k3cloud-client",
-    "description": "Unofficial, independently-written PHP client for the Kingdee Cloud (K/3 Cloud) WebAPI. Supports both third-party app signature auth (X-Kd / X-Api HMAC) and classic username/password session login.",
+    "description": "面向金蝶云星空（K/3 Cloud）WebAPI 的非官方、独立编写 PHP 客户端；同时支持第三方应用签名鉴权（X-Kd / X-Api HMAC）与经典用户名/密码会话登录。",
     "type": "library",
     "keywords": [
         "kingdee",
@@ -9,7 +9,12 @@
         "webapi",
         "erp",
         "sdk",
-        "client"
+        "client",
+        "金蝶",
+        "金蝶云星空",
+        "云星空",
+        "星空",
+        "二次开发"
     ],
     "license": "MIT",
     "readme": "README.md",
