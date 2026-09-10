@@ -9,8 +9,9 @@ authentication modes** you will meet in the wild:
 - **Third-party app signing** — AppID + AppSecret, per-request `X-Kd-*` / `X-Api-*`
   HMAC headers, no server session. Typical for the public-cloud gateway.
 - **Username / password session** — classic `AuthService.ValidateUser` login and
-  a `kdsessionid` cookie, handled lazily and transparently. Typical for private /
-  on-premise installs where no AppID was issued.
+  a `kdsessionid` cookie, handled lazily and transparently; the session is
+  persisted to disk by default so short-lived processes don't pay a re-login.
+  Typical for private / on-premise installs where no AppID was issued.
 
 > **Unofficial.** This is a clean-room implementation written against the
 > documented K/3 Cloud HTTP interface. It is not affiliated with, endorsed by, or
@@ -85,8 +86,9 @@ Fluent options can be chained at any time: each returns a new same-class client,
 the transport is rebuilt so the setting takes effect, and the current auth is
 rebased onto it. A username/password session therefore survives a reconfigure
 (no second login) as long as the credentials are unchanged — login still happens
-at most once, lazily, on the first request. Changing the credentials (or calling
-`->relogin()`) is what forces a fresh authentication.
+at most once, lazily, on the first request, and that "once" now spans processes:
+the `kdsessionid` is persisted to disk by default (see below). Changing the
+credentials (or calling `->relogin()`) is what forces a fresh authentication.
 
 ### Advanced: building a `Config` directly
 
@@ -103,8 +105,47 @@ $api = new K3CloudClient(
 );
 ```
 
+### Session persistence (on by default)
+
+PHP requests are one process each: if `kdsessionid` lived only in memory, every
+new process (cron run, queue worker, every HTTP request) would first pay a
+`ValidateUser` round trip. So in password mode the session cookie is **written
+to disk after login** and replayed by later processes:
+
+- **Location**: `k3cloud-sessions/session-<credential-fingerprint>.json` inside
+  the system temp dir (`sys_get_temp_dir()`; typically `%TEMP%\k3cloud-sessions`
+  on Windows). Each server + account + user + password + lcid combination gets
+  its own file, so changed credentials naturally start a fresh entry.
+- **Self-healing**: there is no probe login. The next process replays the
+  persisted session directly; if the server answers "session lost, please login
+  again", the client transparently re-authenticates, replays the request and
+  refreshes the stored entry. An expired session therefore costs exactly one
+  extra round trip — never a wrong identity, never a stall.
+- **Dead entries are deleted**: `->relogin()` or a detected session loss also
+  drops the on-disk entry, so a dead cookie is never handed to yet another process.
+
+> ⚠️ **Security note**: `kdsessionid` is effectively a short-lived login
+> credential — whoever holds it can call the WebAPI as that user until your
+> server-side session expires. Files are written `0600`, directories `0700`, but
+> a shared host's `sys_get_temp_dir()` may not be trustworthy. On multi-user
+> machines pick a dedicated directory or turn persistence off.
+
+Three switches (meaningful in password mode only; harmless no-ops for signing):
+
+```php
+$api = K3CloudClient::password($url, $acct, $user, $pwd)
+    ->withSessionStorePath('/var/cache/myapp/k3cloud')   // different directory (file store)
+    // ->withoutSessionPersistence()                      // off: memory-only, login per process again
+    // ->withSessionStore($store)                         // custom: Redis / database / your own cache
+```
+
+A custom store only implements the three `K3Cloud\Auth\SessionStore` methods
+(`load` / `save` / `forget`, keyed by the credential fingerprint). Sharing one
+store across web nodes amortises the login to once per cluster.
+
 That is the whole onboarding story: create the client, call an operation. Login
-and signing are automatic.
+and signing are automatic — how the session is stored, where, or whether at all
+is yours to decide.
 
 ## What you get back
 
@@ -204,6 +245,9 @@ the terminals returning `Result`. Design rationale lives in
   (or `Config::withoutTlsVerification()`) for self-signed / private installs.
 - **Timeouts** — `->withTimeouts($connect, $request)` on the client, or
   `Config::withTimeouts(...)` when building a `Config` directly.
+- **Session on disk** — on by default in password mode (`FileSessionStore`,
+  system temp dir); see "Session persistence" above for location, custom stores
+  and how to turn it off.
 
 ### Login payload compatibility
 

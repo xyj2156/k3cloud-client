@@ -9,7 +9,12 @@ declare(strict_types=1);
  *
  * 这是多数私有云 / 本地部署（“买断版”）K/3 Cloud 在未下发第三方 AppID 时采用的方式。
  * 客户端会在第一个调用时透明地完成一次 AuthService.ValidateUser 登录，之后复用
- * kdsessionid Cookie。
+ * kdsessionid Cookie——并且该会话默认落盘（系统临时目录 k3cloud-sessions/），
+ * 下一个进程（另一次脚本运行、cron、队列 worker）直接重放、不再登录；
+ * 会话过期时自动重登，对调用方透明。
+ *
+ * 换目录用 ->withSessionStorePath('/path')，关闭落盘用 ->withoutSessionPersistence()。
+ * 注意：kdsessionid 等同短期登录凭据，多用户机器上请放好你的目录权限。
  *
  * 若你的服务器使用自签 HTTPS，请保留下面的 ->insecure() 调用——否则删掉它（默认开启校验）。
  */

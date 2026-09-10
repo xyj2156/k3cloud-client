@@ -8,7 +8,8 @@
 - **第三方应用签名** —— AppID + AppSecret，按请求计算 `X-Kd-*` / `X-Api-*` HMAC 头，
   不使用服务端会话。常见于公有云网关。
 - **用户名 / 密码会话** —— 经典的 `AuthService.ValidateUser` 登录 + `kdsessionid` Cookie，
-  惰性、透明地自动完成。常见于未下发 AppID 的私有云 / 本地部署。
+  惰性、透明地自动完成；会话默认落盘复用，短生命周期进程不必每进程重登一次。
+  常见于未下发 AppID 的私有云 / 本地部署。
 
 > **非官方。** 这是针对公开的 K/3 Cloud HTTP 接口做的 clean-room 独立实现，与任何金蝶
 > 官方 SDK 无隶属、认可或衍生关系，且不含任何官方 SDK 代码。“金蝶 / Kingdee”“K/3 Cloud”
@@ -78,7 +79,8 @@ $api = K3CloudClient::password($url, $acct, $user, $pwd)
 
 链式选项随时可调用：每个都返回同类新客户端，传输层重建以使设置生效，并把当前鉴权"搬迁"过去。
 因此在凭据不变的前提下，用户名/密码会话可跨一次重配置存活（不会二次登录）——登录仍然**至多一次、
-惰性、发生在第一个请求**。只有更换凭据（或调用 `->relogin()`）才会触发一次新的认证。
+惰性、发生在第一个请求**，而且这"一次"如今可以跨进程：`kdsessionid` 默认会落盘复用（见下节）。
+只有更换凭据（或调用 `->relogin()`）才会触发一次新的认证。
 
 ### 进阶：直接构造 `Config`
 
@@ -94,7 +96,37 @@ $api = new K3CloudClient(
 );
 ```
 
-上手就这么简单：创建客户端、调用操作。登录与签名都自动完成。
+### 会话持久化（默认开启）
+
+PHP 的 Web / 脚本请求是"一次进程一次请求"的模型：如果 `kdsessionid` 只放在内存里，
+每个新进程（cron、队列 worker、每一次 HTTP 请求）都要先付一次 `ValidateUser` 登录往返。
+因此密码模式下登录成功后，会话 Cookie 会**默认写入磁盘**并在后续进程中复用：
+
+- **位置**：系统临时目录下的 `k3cloud-sessions/session-<凭据指纹>.json`
+  （`sys_get_temp_dir()`，Windows 上一般是 `%TEMP%\k3cloud-sessions`）。
+  每个"服务器 + 账套 + 用户 + 密码 + lcid"组合各占一个文件，换凭据天然落到新文件。
+- **自愈**：不做任何探测性预登录。下一个进程直接重放落盘的会话；若服务端回
+  "会话信息已丢失，请重新登录"，客户端会透明地重登并重放本次请求，同时更新落盘条目。
+  所以过期会话的代价只是**一个额外的往返**，绝不会用错身份，也不会卡死。
+- **失效即删**：`->relogin()` 或会话被判丢失时，磁盘条目同步删除，坏会话不会被交给再下一个进程。
+
+> ⚠️ **安全提示**：`kdsessionid` 等同一个短期有效的登录凭据——拿到它的进程在你的服务端会话
+> 过期之前，可以该用户身份调用 WebAPI。文件以 `0600`、目录以 `0700` 写入，但共享主机上
+> 的 `sys_get_temp_dir()` 未必可靠。多用户环境请指定专属目录，或干脆关闭落盘。
+
+三个开关（仅密码模式有意义，签名模式下为无害空操作）：
+
+```php
+$api = K3CloudClient::password($url, $acct, $user, $pwd)
+    ->withSessionStorePath('/var/cache/myapp/k3cloud')   // 换目录（仍为文件存储）
+    // ->withoutSessionPersistence()                      // 关：回到"仅内存、每进程登录一次"
+    // ->withSessionStore($store)                         // 换实现：Redis / 数据库 / 自建缓存
+```
+
+自定义存储只需实现 `K3Cloud\Auth\SessionStore` 的三个方法（`load` / `save` / `forget`，
+按凭据指纹键控）。多个 Web 节点共享一份存储时，登录成本即摊薄为集群级一次。
+
+上手就这么简单：创建客户端、调用操作。登录与签名都自动完成，会话怎么存、存哪里、要不要存都由你决定。
 
 ## 返回值
 
@@ -191,6 +223,8 @@ mutator 语义：`set/ref/custom` 覆盖某个字段；`line()` 是唯一的追�
   （或 `Config::withoutTlsVerification()`）。
 - **超时** —— 客户端 `->withTimeouts($connect, $request)`，或直接构造 `Config` 时用
   `Config::withTimeouts(...)`。
+- **会话落盘** —— 密码模式默认开启（`FileSessionStore`，系统临时目录）；换目录、换实现或
+  关闭见上文"会话持久化（默认开启）"。
 
 ### 登录参数兼容性
 
